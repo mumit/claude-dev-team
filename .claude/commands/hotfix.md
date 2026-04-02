@@ -25,3 +25,13 @@ Pass `pipeline/hotfix-spec.md` to each dev agent instead of `pipeline/design-spe
 
 Human checkpoints still apply at Checkpoint C (after tests pass).
 PM sign-off is required before deploy regardless of urgency.
+
+## Reviewer Instruction for Hotfix
+
+When invoking each reviewer agent during Stage 5, pass this additional instruction:
+
+> This is a hotfix review. Before evaluating code quality, read `pipeline/hotfix-spec.md`
+> and verify the changes do NOT touch any area listed under "What must NOT change
+> (blast radius constraint)". If any change violates the blast radius constraint,
+> that is an automatic BLOCKER — mark the review `REVIEW: CHANGES REQUESTED` and
+> specify exactly which files/lines exceed the constraint.
