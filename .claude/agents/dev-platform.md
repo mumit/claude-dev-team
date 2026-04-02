@@ -52,17 +52,18 @@ services:
 
 ## On a Test Task
 
-1. Read `pipeline/brief.md` acceptance criteria carefully
-2. Write tests covering every acceptance criterion:
+1. Read `pipeline/context.md` — check for `PM-ANSWER:` items and `## Brief Changes` that affect acceptance criteria
+2. Read `pipeline/brief.md` acceptance criteria carefully
+3. Write tests covering every acceptance criterion:
    - Unit tests for isolated logic
    - Integration tests for service interactions
    - At least one E2E test per acceptance criterion
-3. Place tests in `src/tests/` following existing test conventions
-4. Run the full suite
-5. Write `pipeline/test-report.md`:
+4. Place tests in `src/tests/` following existing test conventions
+5. Run the full suite
+6. Write `pipeline/test-report.md`:
    - One row per acceptance criterion: PASS or FAIL
    - Full list of failing tests with error output
-6. Write `pipeline/gates/stage-06.json`
+7. Write `pipeline/gates/stage-06.json`
    - `"status": "PASS"` only if ALL acceptance criteria pass
    - On failure: set `"assigned_retry_to"` to the owning dev
 
