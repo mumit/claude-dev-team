@@ -70,6 +70,18 @@ Review matrix:
   `dev-frontend` reviews: backend + platform  → writes `pipeline/code-review/by-frontend.md`
   `dev-platform` reviews: backend + frontend  → writes `pipeline/code-review/by-platform.md`
 
+### Gate Merge Strategy for Stage 5
+
+Each area gate (`pipeline/gates/stage-05-{area}.json`) must accumulate 2 approvals.
+When a reviewer writes their approval:
+- If the gate file does not yet exist: write a new gate with `"approvals": ["your-agent-name"]`
+- If the gate file exists: read it first, then update `"approvals"` to append your name
+
+Never overwrite a gate that already has entries in `"approvals"`. Append only.
+The gate reaches `"status": "PASS"` only when `"approvals"` contains 2 entries.
+If a reviewer writes `REVIEW: CHANGES REQUESTED`, do not add their name to `"approvals"`;
+instead add to `"changes_requested"` and leave `"status": "FAIL"`.
+
 Pre-read requirement (pass to each reviewer agent):
   - `pipeline/brief.md`
   - `pipeline/design-spec.md`
