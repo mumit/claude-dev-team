@@ -42,6 +42,7 @@ For each concern raised:
   - **Defer**: move to `pipeline/adr/` as an open question ADR
 
 Write an ADR to `pipeline/adr/NNNN-title.md` for every significant decision.
+After writing each ADR, append one line to `pipeline/adr/index.md`: `- [NNNN — Title](NNNN-title.md) — one-sentence summary`
 Change spec status from DRAFT to APPROVED.
 Update `pipeline/gates/stage-02.json` with `"arch_approved": true`.
 
@@ -71,3 +72,12 @@ Set `"escalated_to_principal": true` and your ruling in the stage-05 gate.
 ## Consequences
 [Trade-offs accepted]
 ```
+
+## ADR Index Format
+
+`pipeline/adr/index.md` is the running list of all ADRs for this pipeline run.
+Each entry is one line:
+```
+- [NNNN — Title](NNNN-title.md) — one-sentence summary of the decision
+```
+Create the file on first ADR. Append only — never rewrite existing entries.
