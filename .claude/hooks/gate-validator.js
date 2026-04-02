@@ -44,7 +44,7 @@ try {
 }
 
 // Validate required fields
-const required = ["stage", "status", "agent"];
+const required = ["stage", "status", "agent", "timestamp", "blockers", "warnings"];
 const missing = required.filter(k => !(k in gate));
 if (missing.length > 0) {
   console.error(`[gate-validator] INVALID GATE ${latest.name}: missing fields: ${missing.join(", ")}`);
