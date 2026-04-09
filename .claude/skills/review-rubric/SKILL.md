@@ -47,6 +47,13 @@ Every review comment must be one of:
 `REVIEW: APPROVED` — No blockers. May have suggestions.
 `REVIEW: CHANGES REQUESTED` — One or more blockers. List them.
 
+## Scope
+
+This rubric is for **pipeline Stage 5 peer reviews** — when dev agents review
+each other's PRs during a `/pipeline` run. For standalone pre-merge review
+of changes made outside the pipeline (direct edits, `implement` skill work,
+`/hotfix` runs), use the `pre-pr-review` skill instead.
+
 ## Gotchas (add failures here over time)
 
 - Do not approve a PR just because it "looks fine". Work through the checklist.

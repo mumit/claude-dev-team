@@ -1,41 +1,18 @@
 ---
 description: >
-  Run peer code review for one or all PR areas. Each dev reviews the other
-  two devs' PRs. Use after build stage completes, or to re-run review after
-  a developer addresses review feedback. Argument: "all", "backend",
-  "frontend", or "platform".
+  Review the current branch before creating a pull request. Checks
+  correctness, conventions, tests, security, documentation, and audit
+  anti-patterns. Use for changes made outside the /pipeline — direct
+  edits, implement skill work, /hotfix runs. For pipeline Stage 5
+  peer review, use /pipeline-review instead.
 ---
 
 # /review
 
-Run peer code review. Target: $ARGUMENTS (default: "all")
+You are running a pre-merge code review.
+Load the `pre-pr-review` skill and follow its instructions exactly.
 
-## Review Matrix
-
-Each dev reviews the other two:
-- `dev-backend`  → reviews frontend + platform PRs
-- `dev-frontend` → reviews backend + platform PRs
-- `dev-platform` → reviews backend + frontend PRs
-
-## Execution
-
-For target "all": invoke all three reviewers. Sequential fallback if Agent
-Teams is unavailable — each reviewer reads prior reviews before writing.
-
-For a specific target (e.g. "backend"): invoke only the two reviewers
-assigned to that PR area.
-
-## Pre-Read Requirement
-
-Pass to each reviewer agent:
-- `pipeline/brief.md`
-- `pipeline/design-spec.md`
-- `pipeline/adr/` contents
-- Any existing review files already written this cycle
-- The changed files for the PRs they are reviewing
-
-## Gate
-
-Each PR area needs 2 `REVIEW: APPROVED` entries in its gate file.
-Any `REVIEW: CHANGES REQUESTED` with BLOCKERs halts that area.
-Any `ESCALATE:` triggers the escalation flow — invoke `principal` agent.
+The text after `/review` is optional:
+- If a focus area is given (e.g., `/review security` or `/review tests`),
+  prioritize that area but still run the full checklist.
+- If no argument, run the full review.

@@ -116,7 +116,9 @@ Participates in peer code review by reviewing the backend and frontend PRs.
 
 ---
 
-## Pipeline Commands
+## Commands and Skills
+
+### Pipeline Commands
 
 | Command | What it does |
 |---|---|
@@ -133,6 +135,24 @@ Participates in peer code review by reviewing the backend and frontend PRs.
 | `/adr <title>` | Create an Architecture Decision Record |
 | `/reset` | Archive current run, start fresh |
 | `/status` | Full pipeline status dashboard |
+
+### Audit & Improvement Commands
+
+| Command | What it does |
+|---|---|
+| `/audit [scope]` | Full 4-phase codebase audit with checkpoints → `docs/audit/` |
+| `/audit --resume` | Resume from last completed audit phase |
+| `/audit-quick [scope]` | Quick orientation: Phases 0–1 only (architecture map + health scan) |
+| `/health-check` | Monthly delta scan against prior audit findings |
+| `/review [focus]` | Pre-merge review for non-pipeline changes (loads `pre-pr-review` skill) |
+| `/roadmap` | Show improvement roadmap progress dashboard |
+
+### Skills (non-pipeline)
+
+| Skill | Trigger phrases | What it does |
+|---|---|---|
+| `implement` | "implement [item]", "work on [item]", "next item from roadmap" | Plan → execute → verify for focused changes |
+| `pre-pr-review` | "review my changes", "check before I merge", "pre-PR review" | Pre-merge code review for non-pipeline work |
 
 ---
 

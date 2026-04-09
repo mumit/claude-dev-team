@@ -2,8 +2,8 @@
 
 A full simulated software development team running inside Claude Code.
 Includes a PM, Principal Engineer, and three specialist developers with
-peer code review, human checkpoints, deterministic gate validation, and
-a hotfix path.
+peer code review, human checkpoints, deterministic gate validation,
+a hotfix path, codebase auditing, and a roadmap workflow.
 
 ---
 
@@ -18,28 +18,41 @@ a hotfix path.
 You can bootstrap a new project, or retrofit an existing one.
 
 ```bash
-# 1. Create your project and unzip
-mkdir /path/to/my-project && cd /path/to/my-project
-git init
-# The script is safe to run on an existing project — it uses
-# cp -n (no-overwrite) for .claude/, backs up any existing
-# CLAUDE.md to CLAUDE.md.bak, skips README.md if one exists, and
-# won't touch your src/ if it's already there.
+# 1. Clone and bootstrap
 cd /path/to/dev-team && bash bootstrap.sh /path/to/my-project
 cd /path/to/my-project
 
 # 2. Customise for your stack (takes 5 minutes)
-# Open .claude/skills/code-conventions/SKILL.md — change language/framework specifics
-# Open .claude/skills/api-conventions/SKILL.md — adjust to match your API style
-# Open .claude/agents/dev-platform.md — add your actual deploy command under "On a Deploy Task"
+# .claude/skills/code-conventions/SKILL.md — language/framework specifics
+# .claude/skills/api-conventions/SKILL.md — API style
+# .claude/agents/dev-platform.md — deploy command under "On a Deploy Task"
 
-# 3. Start Claude and go!
+# 3. Start Claude and go
 claude
 ```
 
 ---
 
-## Running the Pipeline
+## When to Use What
+
+| I want to... | Command / Skill |
+|---|---|
+| Build a new feature end-to-end | `/pipeline` |
+| Draft requirements before committing to a build | `/pipeline-brief` |
+| Fix a production bug urgently | `/hotfix` |
+| Understand a codebase I'm new to | `/audit-quick` |
+| Deep-audit and build an improvement roadmap | `/audit` |
+| Work on a small/medium improvement | `implement` skill |
+| Review code before merging (non-pipeline) | `/review` |
+| Check monthly codebase health | `/health-check` |
+| See improvement roadmap progress | `/roadmap` |
+| See pipeline status | `/status` |
+| Resolve a technical disagreement | `/principal-ruling` |
+| Record an architecture decision | `/adr` |
+
+---
+
+## Building Features: The Pipeline
 
 ```bash
 # Full feature pipeline
@@ -48,19 +61,11 @@ claude
 # Draft brief only — review before committing to a full run
 /pipeline-brief Add user authentication
 
-# Check current pipeline state
-/pipeline-status
-
-# Re-run code review only (after manual fixes)
-/pipeline-review
-
 # Urgent production fix (skips design stage)
 /hotfix Login endpoint returning 500 on valid credentials since deploy #142
 ```
 
----
-
-## Human Checkpoints
+### Human Checkpoints
 
 The pipeline pauses three times for your review:
 
@@ -74,11 +79,73 @@ Type `proceed` to advance.
 
 ---
 
+## Auditing & Improving a Codebase
+
+### `/audit` — Full codebase audit
+
+Runs four phases with human checkpoints, producing a complete analysis
+and prioritized roadmap in `docs/audit/`:
+
+```
+Phase 0 — Bootstrap      → architecture map, dependency graph, git history
+  ✋ Checkpoint A: review the map
+Phase 1 — Health          → convention violations, test gaps, doc gaps
+  ✋ Checkpoint B: review findings
+Phase 2 — Deep Analysis   → security, performance, code quality
+  ✋ Checkpoint C: review before roadmap
+Phase 3 — Roadmap         → prioritized backlog, sequenced implementation plan
+```
+
+Options:
+- `/audit src/backend/` — scope to a subsystem
+- `/audit --resume` — pick up from last completed phase
+
+### `/audit-quick` — Orientation + health scan
+
+Runs Phases 0-1 only. Good for onboarding or a quick checkup.
+Run `/audit --resume` later to continue with deep analysis.
+
+### `/health-check` — Monthly delta scan
+
+Compares current codebase against prior audit findings. Reports new
+violations, stale docs, untested new code, and roadmap progress.
+
+### `/roadmap` — Progress dashboard
+
+Shows roadmap status: what's done, what's next, what's stalled.
+
+### `implement` skill — Work on roadmap items
+
+For small-to-medium changes that don't need a full pipeline. Say
+"implement [item]" or "next item from the roadmap". Follows plan →
+execute → verify with human approval between steps.
+
+### `/review` — Pre-merge review
+
+For changes made outside the pipeline. Checks conventions, tests,
+security, and audit anti-patterns. Also available as a skill via
+"review my changes".
+
+---
+
+## Project-Specific Audit Extensions
+
+If your project has conventions beyond what generic analysis covers,
+create `docs/audit-extensions.md`. The `/audit` command reads it
+automatically and runs your checks after each phase.
+
+See `.claude/references/audit-extensions-example.md` for the format
+and a worked example.
+
+---
+
 ## Project Structure
 
 ```
 your-project/
-├── CLAUDE.md                          # Orchestrator (lean — reads rules/)
+├── CLAUDE.md                          # Orchestrator
+├── AGENTS.md                          # Agent summary (multi-tool compat)
+├── bootstrap.sh                       # First-time setup script
 ├── .claude/
 │   ├── agents/
 │   │   ├── pm.md                      # PM — requirements, sign-off
@@ -87,39 +154,55 @@ your-project/
 │   │   ├── dev-frontend.md            # Frontend dev — UI, client
 │   │   └── dev-platform.md            # Platform dev — tests, CI, deploy
 │   ├── commands/
-│   │   ├── pipeline.md                # /pipeline
-│   │   ├── pipeline-brief.md          # /pipeline-brief
-│   │   ├── pipeline-review.md         # /pipeline-review
-│   │   ├── pipeline-status.md         # /pipeline-status
-│   │   └── hotfix.md                  # /hotfix
+│   │   ├── pipeline.md                # /pipeline — full feature build
+│   │   ├── pipeline-brief.md          # /pipeline-brief — draft brief only
+│   │   ├── pipeline-review.md         # /pipeline-review — Stage 5 re-run
+│   │   ├── pipeline-status.md         # /pipeline-status — compact dump
+│   │   ├── status.md                  # /status — pipeline dashboard
+│   │   ├── hotfix.md                  # /hotfix — urgent production fix
+│   │   ├── audit.md                   # /audit — full codebase audit
+│   │   ├── audit-quick.md             # /audit-quick — Phases 0–1 only
+│   │   ├── health-check.md            # /health-check — monthly delta scan
+│   │   ├── review.md                  # /review — pre-merge review
+│   │   ├── roadmap.md                 # /roadmap — improvement dashboard
+│   │   ├── design.md                  # /design — requirements + design
+│   │   ├── adr.md                     # /adr — architecture decision record
+│   │   ├── principal-ruling.md        # /principal-ruling — binding ruling
+│   │   └── ...                        # ask-pm, reset, resume, stage
 │   ├── hooks/
 │   │   └── gate-validator.js          # Deterministic gate checking
+│   ├── references/
+│   │   ├── audit-phases.md            # Detailed audit phase definitions
+│   │   └── audit-extensions-example.md
 │   ├── rules/
 │   │   ├── pipeline.md                # Stage-by-stage definition
 │   │   ├── gates.md                   # Gate JSON schema
 │   │   ├── escalation.md              # Escalation rules
 │   │   └── compaction.md              # Context compaction instructions
 │   ├── skills/
+│   │   ├── implement/SKILL.md         # Plan/execute/verify for focused changes
+│   │   ├── pre-pr-review/SKILL.md     # Pre-merge review
 │   │   ├── code-conventions/SKILL.md  # Shared coding standards
-│   │   ├── review-rubric/SKILL.md     # Code review checklist
+│   │   ├── review-rubric/SKILL.md     # Pipeline Stage 5 review checklist
 │   │   ├── security-checklist/SKILL.md
 │   │   └── api-conventions/SKILL.md
-│   └── settings.json                  # Permissions, hooks, Agent Teams flag
-├── pipeline/
-│   ├── context.md                     # Shared memory (append-only)
-│   ├── brief.md                       # PM output
-│   ├── design-spec.md                 # Principal output
-│   ├── design-review-notes.md         # Dev annotations
-│   ├── adr/                           # Architecture Decision Records
-│   ├── pr-{backend,frontend,platform}.md
-│   ├── code-review/by-{backend,frontend,platform}.md
-│   ├── test-report.md
-│   ├── deploy-log.md
-│   └── gates/                         # JSON gate files (machine-readable)
+│   └── settings.json
+├── docs/
+│   ├── lifecycle.md                   # Full written guide
+│   ├── faq.md                         # FAQ for technical teams
+│   ├── build-presentation.js          # Generate the slide deck
+│   ├── audit/                         # Generated by /audit
+│   │   ├── status.json
+│   │   ├── 00-project-context.md
+│   │   ├── ...
+│   │   └── 10-roadmap.md
+│   └── audit-extensions.md            # Optional: project-specific checks
+├── pipeline/                          # Generated by /pipeline
+│   ├── context.md
+│   ├── gates/
+│   ├── adr/
+│   └── ...
 └── src/
-    ├── backend/
-    ├── frontend/
-    └── infra/
 ```
 
 ---
@@ -157,6 +240,17 @@ Your decision on any escalation is recorded in `pipeline/context.md`.
 3. Add deploy steps to `dev-platform.md` under "On a Deploy Task"
 4. Add MCP servers to agent frontmatter (GitHub, Slack, Jira, etc.)
 5. Swap `sonnet` → `haiku` on dev agents to reduce cost on simpler features
+6. Create `docs/audit-extensions.md` for project-specific audit checks
+
+---
+
+## Documentation
+
+The `docs/` directory includes materials for presenting and sharing the framework:
+
+- **[docs/lifecycle.md](docs/lifecycle.md)** — Full written guide covering audit, implement, review, pipeline, safety model, and maintenance
+- **[docs/faq.md](docs/faq.md)** — Frequently asked questions from technical teams evaluating the framework
+- **[docs/build-presentation.js](docs/build-presentation.js)** — Node script to generate an 18-slide `.pptx` deck (`npm install pptxgenjs react-icons react react-dom sharp && node docs/build-presentation.js`)
 
 ---
 
@@ -168,4 +262,5 @@ Your decision on any escalation is recorded in `pipeline/context.md`.
 - **Parallel builds use git worktrees.** Merge conflicts need manual resolution
   before Stage 5.
 - **Token costs scale quickly.** Use `/pipeline-brief` before committing to a
-  full run on a large feature.
+  full run on a large feature. Use `/audit-quick` before committing to a full
+  `/audit`.

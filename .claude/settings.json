@@ -26,6 +26,7 @@
       "Bash(git status)",
       "Write(src/**)",
       "Write(pipeline/**)",
+      "Write(docs/**)",
       "Write(.claude/agents/**)",
       "Write(.claude/skills/**)"
     ],
