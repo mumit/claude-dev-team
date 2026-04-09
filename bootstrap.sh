@@ -29,9 +29,12 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # ── Preflight checks ──────────────────────────────────────
-command -v node >/dev/null 2>&1 || { echo "❌  Node.js is required (for gate-validator.js). Install from nodejs.org"; exit 1; }
-command -v git  >/dev/null 2>&1 || { echo "❌  Git is required (for worktrees during parallel builds)."; exit 1; }
+command -v node  >/dev/null 2>&1 || { echo "❌  Node.js is required (for gate-validator.js). Install from nodejs.org"; exit 1; }
+command -v git   >/dev/null 2>&1 || { echo "❌  Git is required (for worktrees during parallel builds)."; exit 1; }
+command -v rsync >/dev/null 2>&1 || { echo "❌  rsync is required (for merging .claude/ without overwriting)."; exit 1; }
 command -v claude >/dev/null 2>&1 || { echo "⚠️   Claude Code not found in PATH. Install: npm install -g @anthropic-ai/claude-code"; }
+
+[ -d "$TARGET" ] || { echo "❌  Target directory does not exist: $TARGET"; exit 1; }
 
 NODE_VERSION=$(node -e "process.stdout.write(process.version)")
 echo "✅  Node.js $NODE_VERSION"
@@ -58,7 +61,7 @@ fi
 echo "📁  Copying .claude/ ..."
 if [ -d "$TARGET/.claude" ]; then
   echo "    .claude/ exists — merging (existing files will not be overwritten)"
-  cp -rn "$SCRIPT_DIR/.claude/." "$TARGET/.claude/"
+  rsync --ignore-existing -a "$SCRIPT_DIR/.claude/" "$TARGET/.claude/"
 else
   cp -r "$SCRIPT_DIR/.claude" "$TARGET/"
 fi
