@@ -140,7 +140,7 @@ Yes. The `docs/audit/` files are regular markdown committed to the repo. Multipl
 
 **How do I keep the framework updated?**
 
-Pull updates from `github.com/mumit/claude-dev-team` and re-run `bootstrap.sh`. The script installs to `.claude/` without overwriting your `docs/audit-extensions.md` or generated output. Note: `CLAUDE.md` will be overwritten — merge back any project-specific additions.
+Pull updates from `github.com/mumit/claude-dev-team` and re-run `bootstrap.sh`. The script overwrites `.claude/` and `AGENTS.md` with the latest framework files. Your `CLAUDE.md`, `pipeline/context.md`, `src/`, and all `*.local.*` files are never touched. Use `CLAUDE.md` or `CLAUDE.local.md` for project-specific instructions.
 
 **What's the repo URL?**
 

@@ -35,7 +35,7 @@ The key components:
 | `.claude/agents/` | Agent definitions (PM, Principal, 3 devs) |
 | `.claude/commands/` | Slash commands (`/pipeline`, `/status`, etc.) |
 | `.claude/skills/` | Shared skill definitions (conventions, checklists) |
-| `.claude/rules/` | Pipeline rules, gate schema, escalation protocol |
+| `.claude/rules/` | Pipeline rules, gate schema, escalation, orchestrator |
 | `.claude/hooks/` | Git/tool hooks (gate-validator.js) |
 | `pipeline/` | Runtime pipeline state (gates, context, artifacts) |
 | `bootstrap.sh` | Installs the framework into an existing project |
@@ -63,3 +63,6 @@ See `AGENTS.md` for the full team and command reference.
 - Test with `npm run test:integration`
 - Verify it runs on both macOS and Linux (CI covers Ubuntu)
 - It must be idempotent — running twice should not break anything
+- `.claude/` is overwritten on every run (framework-owned)
+- `CLAUDE.md` is created only if missing (project-owned)
+- `*.local.*` files and `settings.local.json` are always preserved

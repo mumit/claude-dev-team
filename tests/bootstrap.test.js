@@ -46,6 +46,14 @@ describe('bootstrap.sh', () => {
     assert.ok(fs.existsSync(path.join(target, '.claude', 'skills')));
   });
 
+  it('copies orchestrator.md into .claude/rules/', () => {
+    run(target);
+    const orchPath = path.join(target, '.claude', 'rules', 'orchestrator.md');
+    assert.ok(fs.existsSync(orchPath));
+    const content = fs.readFileSync(orchPath, 'utf8');
+    assert.ok(content.includes('Dev Team Orchestrator'));
+  });
+
   it('creates pipeline/ structure with gates, adr, code-review', () => {
     run(target);
     assert.ok(fs.existsSync(path.join(target, 'pipeline')));
@@ -62,26 +70,56 @@ describe('bootstrap.sh', () => {
     assert.ok(content.includes('# Project Context'));
   });
 
-  it('copies CLAUDE.md, AGENTS.md, and EXAMPLE.md', () => {
+  it('creates CLAUDE.md and AGENTS.md on fresh install', () => {
     run(target);
     assert.ok(fs.existsSync(path.join(target, 'CLAUDE.md')));
     assert.ok(fs.existsSync(path.join(target, 'AGENTS.md')));
-    assert.ok(fs.existsSync(path.join(target, 'EXAMPLE.md')));
   });
 
-  it('copies README.md when none exists', () => {
+  it('does not copy EXAMPLE.md or README.md', () => {
     run(target);
-    assert.ok(fs.existsSync(path.join(target, 'README.md')));
+    assert.ok(!fs.existsSync(path.join(target, 'EXAMPLE.md')));
+    assert.ok(!fs.existsSync(path.join(target, 'README.md')));
   });
 
-  it('skips README.md and creates dev-team-README.md when README exists', () => {
-    const existingContent = '# My Project\n';
-    fs.writeFileSync(path.join(target, 'README.md'), existingContent);
+  it('does not touch existing CLAUDE.md', () => {
+    const original = '# My Project Instructions\n';
+    fs.writeFileSync(path.join(target, 'CLAUDE.md'), original);
     run(target);
-    // Original README preserved
-    assert.equal(fs.readFileSync(path.join(target, 'README.md'), 'utf8'), existingContent);
-    // Reference copy created
-    assert.ok(fs.existsSync(path.join(target, 'dev-team-README.md')));
+    // CLAUDE.md preserved exactly
+    assert.equal(fs.readFileSync(path.join(target, 'CLAUDE.md'), 'utf8'), original);
+    // No backup file created
+    assert.ok(!fs.existsSync(path.join(target, 'CLAUDE.md.bak')));
+  });
+
+  it('overwrites .claude/ framework files on re-run', () => {
+    // First run
+    run(target);
+    // Simulate a stale agent file
+    const agentPath = path.join(target, '.claude', 'agents', 'dev-backend.md');
+    fs.writeFileSync(agentPath, '# Stale version\n');
+    // Second run should overwrite
+    run(target);
+    const content = fs.readFileSync(agentPath, 'utf8');
+    assert.notEqual(content, '# Stale version\n', 'framework file should be overwritten on update');
+  });
+
+  it('preserves .local. files in .claude/ during overwrite', () => {
+    fs.mkdirSync(path.join(target, '.claude', 'agents'), { recursive: true });
+    const localPath = path.join(target, '.claude', 'agents', 'dev-backend.local.md');
+    fs.writeFileSync(localPath, '# My local overrides\n');
+    run(target);
+    assert.ok(fs.existsSync(localPath), '.local. file should survive');
+    assert.equal(fs.readFileSync(localPath, 'utf8'), '# My local overrides\n');
+  });
+
+  it('preserves settings.local.json during overwrite', () => {
+    fs.mkdirSync(path.join(target, '.claude'), { recursive: true });
+    const localSettings = path.join(target, '.claude', 'settings.local.json');
+    fs.writeFileSync(localSettings, '{"custom": true}\n');
+    run(target);
+    assert.ok(fs.existsSync(localSettings), 'settings.local.json should survive');
+    assert.equal(fs.readFileSync(localSettings, 'utf8'), '{"custom": true}\n');
   });
 
   it('makes gate-validator.js executable', () => {
@@ -110,42 +148,14 @@ describe('bootstrap.sh', () => {
     assert.ok(!fs.existsSync(path.join(target, 'src', 'backend')));
   });
 
-  it('backs up existing CLAUDE.md before overwriting', () => {
-    const original = '# Original CLAUDE.md\n';
-    fs.writeFileSync(path.join(target, 'CLAUDE.md'), original);
-    run(target);
-    // Backup exists
-    assert.ok(fs.existsSync(path.join(target, 'CLAUDE.md.bak')));
-    assert.equal(fs.readFileSync(path.join(target, 'CLAUDE.md.bak'), 'utf8'), original);
-    // New CLAUDE.md is from the framework
-    const newContent = fs.readFileSync(path.join(target, 'CLAUDE.md'), 'utf8');
-    assert.notEqual(newContent, original);
-  });
-
-  it('merges into existing .claude/ without overwriting files', () => {
-    // Create .claude/ with a custom file
-    fs.mkdirSync(path.join(target, '.claude'), { recursive: true });
-    const customPath = path.join(target, '.claude', 'custom.md');
-    fs.writeFileSync(customPath, '# Custom\n');
-    // Create an existing agent file to verify it's not overwritten
-    fs.mkdirSync(path.join(target, '.claude', 'agents'), { recursive: true });
-    const agentPath = path.join(target, '.claude', 'agents', 'dev-backend.md');
-    fs.writeFileSync(agentPath, '# My custom backend agent\n');
-    run(target);
-    // Custom file preserved
-    assert.equal(fs.readFileSync(customPath, 'utf8'), '# Custom\n');
-    // Existing agent NOT overwritten (rsync --ignore-existing)
-    assert.equal(fs.readFileSync(agentPath, 'utf8'), '# My custom backend agent\n');
-    // But new agents from framework are added
-    assert.ok(fs.existsSync(path.join(target, '.claude', 'agents', 'dev-frontend.md')));
-  });
-
-  it('appends pipeline entries to existing .gitignore', () => {
+  it('appends pipeline and local-override entries to existing .gitignore', () => {
     fs.writeFileSync(path.join(target, '.gitignore'), 'node_modules/\n');
     run(target);
     const content = fs.readFileSync(path.join(target, '.gitignore'), 'utf8');
     assert.ok(content.includes('node_modules/'), 'original entries preserved');
     assert.ok(content.includes('pipeline/gates/'), 'pipeline entries appended');
+    assert.ok(content.includes('.claude/**/*.local.*'), 'local override pattern appended');
+    assert.ok(content.includes('CLAUDE.local.md'), 'CLAUDE.local.md appended');
   });
 
   it('does not duplicate .gitignore entries on second run', () => {
