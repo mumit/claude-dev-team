@@ -20,6 +20,7 @@ Stage                    Status      Agent           Notes
 ───────────────────────────────────────────────────────────────
 01 Requirements          ✅ PASS     pm
 02 Design                ✅ PASS     principal       2 ADRs written
+03 Clarification         ✅ PASS     pm              No open questions
 04a Build (backend)      ✅ PASS     dev-backend
 04b Build (frontend)     ✅ PASS     dev-frontend
 04c Build (platform)     ⏳ PENDING  —
@@ -29,6 +30,11 @@ Stage                    Status      Agent           Notes
 08  Deploy               ⏳ PENDING  —
 ───────────────────────────────────────────────────────────────
 ```
+
+For Stage 03 (Clarification): check `pipeline/context.md` for `QUESTION:` lines
+without a corresponding `PM-ANSWER:`. If none exist, show `✅ PASS — No open questions`.
+If unanswered questions exist, show `⏳ PENDING — N open questions`.
+If no Stage 02 gate exists yet, show `⏳ PENDING`.
 
 Also print:
 - Any open questions from `pipeline/context.md` that lack a PM-ANSWER
