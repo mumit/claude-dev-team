@@ -189,8 +189,8 @@ Worktree cleanup isn't part of `/reset`, Stage 3 is invisible in status dashboar
 
 ### Parked
 
-**16. Add YAML frontmatter linting to CI**
-- Reason: Depends on P3-14 (schema validation script). Revisit after P3-14 ships.
+**[DONE] 16. Add YAML frontmatter linting to CI**
+- Completed: `npm run lint:frontmatter` runs frontmatter tests; `npm run lint` (eslint) added to CI workflow.
 
 **17. Add end-to-end pipeline test**
 - Reason: Running a full pipeline as an automated test would require a Claude Code instance and significant token cost. Not practical for CI. Could revisit if Claude Code adds a dry-run or test mode.

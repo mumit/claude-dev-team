@@ -3,7 +3,7 @@ const React = require("react");
 const ReactDOMServer = require("react-dom/server");
 const sharp = require("sharp");
 
-const { FaRocket, FaSearch, FaTools, FaCodeBranch, FaChartLine, FaShieldAlt, FaUsers, FaCogs, FaCheckCircle, FaClipboardList, FaLayerGroup, FaSyncAlt, FaProjectDiagram, FaBrain, FaTerminal, FaCalendarCheck, FaArrowRight, FaLightbulb, FaLock, FaExclamationTriangle, FaPuzzlePiece, FaBan, FaExchangeAlt } = require("react-icons/fa");
+const { FaRocket, FaSearch, FaTools, FaCodeBranch, FaChartLine, FaShieldAlt, FaUsers, FaCogs, FaCheckCircle, FaClipboardList, FaLayerGroup, FaSyncAlt, FaBrain, FaTerminal, FaCalendarCheck, FaLightbulb, FaLock, FaExclamationTriangle, FaPuzzlePiece, FaBan, FaExchangeAlt } = require("react-icons/fa");
 
 // ── Palette: Deep purple + green ──
 const C = {
@@ -205,7 +205,7 @@ function slideWhenToUse(pres) {
 }
 
 /** Slide 7: Audit phases — four numbered phase cards with arrows. */
-function slideAuditPhases(pres, I) {
+function slideAuditPhases(pres) {
   const s = pres.addSlide();
   s.background = { color: C.off_white };
   s.addText("/audit  —  4 Phases, 3 Checkpoints", { x: 0.7, y: 0.3, w: 9, h: 0.55, fontSize: 28, fontFace: FONT_H, color: C.text_dark, bold: true, margin: 0 });
@@ -249,7 +249,7 @@ function slideAuditPhases(pres, I) {
 }
 
 /** Slide 8: Audit output — file list and example finding. */
-function slideAuditOutput(pres, I) {
+function slideAuditOutput(pres) {
   const s = pres.addSlide();
   s.background = { color: C.off_white };
   s.addText("What the Audit Produces", { x: 0.7, y: 0.3, w: 9, h: 0.55, fontSize: 28, fontFace: FONT_H, color: C.text_dark, bold: true, margin: 0 });
