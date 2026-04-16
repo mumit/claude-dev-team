@@ -3,9 +3,9 @@
   "scope": "full",
   "phases": {
     "phase-0": "complete",
-    "phase-1": "pending",
+    "phase-1": "complete",
     "phase-2": "pending",
     "phase-3": "pending"
   },
-  "current_phase": "phase-1"
+  "current_phase": "phase-2"
 }

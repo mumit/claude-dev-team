@@ -1,106 +1,139 @@
-# Convention Compliance
+# 03 — Convention Compliance
 
 ## Methodology
 
-This project documents conventions in `.claude/skills/code-conventions/SKILL.md`. Since this is a configuration-as-code project (mostly Markdown), many code-level conventions (naming, error handling, SQL) apply to the *target* project, not this repo. This audit checks: (1) whether the framework follows its own documented conventions where applicable, and (2) internal consistency.
+The project documents conventions in several places:
+
+- `.claude/skills/code-conventions/SKILL.md` — naming, docstrings, error handling, SQL, secrets
+- `.claude/skills/api-conventions/SKILL.md`, `security-checklist/SKILL.md`, `review-rubric/SKILL.md` — target-project concerns
+- `.claude/rules/pipeline.md`, `gates.md`, `escalation.md`, `orchestrator.md`, `compaction.md` — orchestration rules
+- `CONTRIBUTING.md` — branch → `npm test` → PR
+
+Two audiences need to be kept distinct:
+
+1. **Target-project conventions** (the code that generated agents emit). The `code-conventions` and `api-conventions` skills explicitly target this audience. They are *not* binding on this repo's own JS.
+2. **Framework-internal conventions** (the code and markdown in this repo). These are mostly implicit, with a few enforced by tests (`tests/frontmatter.test.js`) and ESLint (`eslint.config.js`).
+
+This file audits (2) only. It does not attempt to lint the framework against rules intended for target projects.
+
+Prior findings from earlier audits have been re-verified. The April 2026 health check landed most of the prior fixes; the remaining items are recorded below.
 
 ---
 
 ## Findings
 
-### Category: File Naming
+### Category: Code Style & Linting
 
-**Finding 1: Inconsistent naming pattern across .claude/ subdirectories**
-- Convention: `code-conventions/SKILL.md` says "Files: `kebab-case` for all languages"
-- Observed: Agent files use `dev-backend.md`, `dev-frontend.md` (kebab-case ✅) but also `pm.md`, `principal.md` (single word, fine). Skill directories use `code-conventions/`, `api-conventions/` (kebab-case ✅) but the file inside is always `SKILL.md` (SCREAMING_CASE).
-- Assessment: `SKILL.md` is a Claude Code convention, not a project choice. **No violation.**
-- Confidence: LOW
+**Finding 1 — ESLint config is a stub (persists)**
+- File: `eslint.config.js`
+- Observed: Uses `@eslint/js` flat config with `js.configs.recommended`. No custom rules beyond the ESLint defaults. No style rules (quotes, semis, spacing), no complexity caps, no import-order rules, no file-level ignores beyond `node_modules/`.
+- Assessment: Functional — catches genuine errors like unused vars and unreachable code. But the documented conventions in `.claude/skills/code-conventions/SKILL.md` (no magic numbers, kebab-case files, JSDoc on public functions) are *not* mechanically enforced.
+- Suggested fix: Either (a) accept the stub as intentional and remove the `lint` step's claim of "enforcing conventions", or (b) add a handful of opinionated rules: `no-console` (off for scripts), `no-magic-numbers` (warn, with allowed `[0, 1, -1]`), `require-jsdoc` for exported functions in `docs/build-presentation.js`.
+- Confidence: **MEDIUM** (design call; the current stub is defensible)
 
-### Category: Documentation (JSDoc)
-
-**Finding 2: gate-validator.js lacks JSDoc on functions**
-- File: `.claude/hooks/gate-validator.js`
-- Convention: "Every public function/method has a docstring or JSDoc comment" (`code-conventions/SKILL.md:9`)
-- Observed: The file has a top-level block comment (good) but no functions — it's a linear script. No JSDoc needed.
-- Assessment: **No violation** — the script is procedural, not modular.
-- Confidence: HIGH
-
-**Finding 3: build-presentation.js has no JSDoc on exported/public functions**
-- File: `docs/build-presentation.js:31-38`
-- Convention: "Every public function/method has a docstring or JSDoc comment"
-- Observed: Functions `renderIconSvg`, `icon`, `addCard` and 10+ other helper functions have zero JSDoc. The file has 684 lines of undocumented functions.
-- Suggested fix: Add JSDoc to at least `icon()`, `addCard()`, `addBullets()`, `slideBg()`, and `main()`.
-- Confidence: **HIGH**
+**Finding 2 — `npm run lint:frontmatter` is a misleading script name**
+- File: `package.json:10`
+- Observed: `"lint:frontmatter": "node --test tests/frontmatter.test.js"`. The script name suggests a linter; it actually runs a single test file.
+- Assessment: Works, but the `lint:*` namespace implies a lint tool. A future contributor might look for a `.frontmatterrc` or a real linter.
+- Suggested fix: Rename to `"test:frontmatter"` for consistency with `test:integration`, or leave and add a 1-line comment in `package.json` (`"// lint:frontmatter": "alias to the frontmatter validation suite"`).
+- Confidence: LOW (cosmetic, no functional impact)
 
 ### Category: Error Handling
 
-**Finding 4: gate-validator.js has incomplete error handling**
-- File: `.claude/hooks/gate-validator.js:38-44`
-- Convention: "Never swallow errors silently" and "All async operations have explicit error handling"
-- Observed: The `JSON.parse` try/catch correctly reports the error. However, `fs.readFileSync` and `fs.readdirSync` are not wrapped — if the directory is unreadable or a file is corrupt, the script throws an unhandled exception.
-- Suggested fix: Wrap `fs.readdirSync` and `fs.statSync` in try/catch.
-- Confidence: **MEDIUM** — these are unlikely failure modes but the convention says "never swallow errors silently", and unhandled exceptions aren't silent but are still ungraceful.
+**Finding 3 — `gate-validator.js` can still throw on unreadable gates dir**
+- File: `.claude/hooks/gate-validator.js:22-29`
+- Observed: `fs.readdirSync(GATES_DIR)` and `fs.statSync(...)` are unguarded. If the directory exists but is unreadable, or a gate file is removed between `readdirSync` and `statSync`, the hook throws an unhandled exception. The orchestrator then sees a non-zero exit from the hook, which is indistinguishable from a legitimate FAIL.
+- Assessment: Unlikely on a single-user dev machine, but the hook is the framework's single source of truth for pipeline control flow. Defensive error handling is cheap here.
+- Suggested fix: Wrap the `readdirSync`/`statSync` loop in a try/catch; on filesystem error, print `[gate-validator] WARN: could not read gates dir (<err>); treating as empty` and `process.exit(0)`.
+- Confidence: MEDIUM
 
-### Category: Security
+**Finding 4 — Dev-agent PostToolUse lint hooks capture but still `|| true`**
+- Files: `.claude/agents/dev-backend.md:21`, `.claude/agents/dev-frontend.md:19`, `.claude/agents/dev-platform.md:19`
+- Observed: Each dev agent now runs `cd $(git rev-parse --show-toplevel) && npm run lint --if-present 2>&1 | tee -a pipeline/lint-output.txt || true`. Output is now persisted (resolution of prior Finding 11), which is an improvement. The `|| true` still suppresses the exit code.
+- Assessment: Intentional — target projects may not have a lint script, and the framework must not wedge on their behalf. Output is now captured to `pipeline/lint-output.txt`, which satisfies the "never swallow errors silently" spirit of the convention.
+- Suggested fix: None, but consider a Stage-5 checklist item in `review-rubric` asking reviewers to glance at `pipeline/lint-output.txt` if it exists.
+- Confidence: LOW (already mitigated)
 
-**Finding 5: No `.gitignore` in the framework repo**
-- Convention: Security checklist says "`.env` files are in `.gitignore`". Code conventions say "No secrets, tokens, or credentials in source code."
-- Observed: The repo has no `.gitignore` at all. While there are no secrets currently, this means any `.env` file accidentally created would be tracked. The bootstrap script adds `.gitignore` entries to the *target* project but not to this repo.
-- Suggested fix: Add a `.gitignore` with at least: `.env`, `node_modules/`, `*.pptx`, `pipeline/gates/`, `docs/audit/`.
-- Confidence: **HIGH**
+### Category: Security & Secrets
+
+**Finding 5 — `.gitignore` is comprehensive (resolved)**
+- File: `.gitignore`
+- Observed: Covers `node_modules/`, `*.pptx`, `pipeline/gates/*.json` (except schema), `*.local.*`, `.env*`. Prior audit's finding of "no .gitignore at all" is resolved.
+- Assessment: No action needed.
+- Confidence: HIGH
+
+**Finding 6 — No TODO/FIXME/HACK markers in production code**
+- Verified by grep across the repo excluding `docs/audit/`. The single match in `docs/build-presentation.js:539` is the string literal `"TODOs older than 30 days"` inside a health-check slide — content, not a debt marker.
+- Assessment: Clean.
+- Confidence: HIGH
 
 ### Category: Architecture Consistency
 
-**Finding 6: CLAUDE.md says "You do not write code" but orchestrator context includes code-adjacent operations**
-- File: `CLAUDE.md:3`
-- Convention: CLAUDE.md says the orchestrator "does not write code or make technical decisions"
-- Observed: The `/audit` command (run by the orchestrator) writes analysis files, runs git commands, and produces technical assessments. This is appropriate — it's analysis, not code authoring — but the statement in CLAUDE.md is slightly misleading.
-- Suggested fix: Clarify to "You do not write application code or make technical decisions about the target project's implementation."
-- Confidence: **LOW** — cosmetic, not functional
+**Finding 7 — CLAUDE.md is near-empty**
+- File: `CLAUDE.md` (5 lines, mostly comments)
+- Observed: The file contains framework-pattern boilerplate ("customize here") but no project-specific guidance for Claude when working on *this* repo. The orchestrator rules live under `.claude/rules/`, which is the framework's own territory — meant to be propagated into target projects by bootstrap. For this repo's own maintenance, Claude gets no project-level instructions.
+- Assessment: Mild gap. The audit workflow and the health-check workflow each re-derive their own context from `.claude/references/`. But a contributor using Claude to edit this repo has no single pinned "how we work here" doc.
+- Suggested fix: Add a short section to `CLAUDE.md` covering: (a) this repo contains the framework only; generated target-project code does not live here, (b) run `npm test` before committing, (c) follow Conventional Commits, (d) do not add runtime dependencies, (e) point to `CONTRIBUTING.md` for process.
+- Confidence: MEDIUM
 
-**Finding 7: Duplicate content between CLAUDE.md and AGENTS.md**
-- Files: `CLAUDE.md` and `AGENTS.md`
-- Convention: Implied DRY principle — AGENTS.md header says it's "a human-readable summary and a compatibility shim for other tools"
-- Observed: The team listing in CLAUDE.md and AGENTS.md are largely redundant. AGENTS.md has far more detail but CLAUDE.md has the authoritative role for Claude Code.
-- Assessment: **Intentional** — AGENTS.md serves other tools. Not a violation.
+**Finding 8 — Status command now includes Stage 3 (resolved)**
+- File: `.claude/commands/status.md`
+- Observed: Stage 03 (Pre-Build Clarification) now appears in the dashboard template. Prior finding resolved.
+- Confidence: HIGH
+
+**Finding 9 — `pipeline-status` command renamed to `pipeline-context` (resolved)**
+- File: `.claude/commands/pipeline-context.md`
+- Observed: The naming overlap with `/status` is gone; `pipeline-context` now clearly names its purpose (pre-compaction state dump).
+- Confidence: HIGH
+
+**Finding 10 — `build-presentation.js` now has JSDoc (resolved)**
+- File: `docs/build-presentation.js`
+- Observed: 19 JSDoc blocks covering the 17 public helpers and the 2 entry points. Prior finding (684 undocumented lines) resolved.
+- Confidence: HIGH
+
+### Category: Agent & Skill Consistency
+
+**Finding 11 — PM agent skill load-out matches role (still clean)**
+- Files: `.claude/agents/pm.md`, `.claude/agents/principal.md`, `.claude/agents/dev-*.md`
+- Observed: PM loads no engineering-review skills — correct, PM reviews requirements. Principal loads `security-checklist` and `api-conventions` — correct. The three devs load `code-conventions`, `review-rubric`, `security-checklist`.
+- Assessment: Role-aligned. No drift detected since the prior audit.
+- Confidence: HIGH
+
+**Finding 12 — Three dev agents share near-identical frontmatter & hooks**
+- Files: `.claude/agents/dev-backend.md`, `dev-frontend.md`, `dev-platform.md`
+- Observed: Each agent's YAML frontmatter differs only by `name`, `description`, and the file-tree scope it owns. PostToolUse hooks are byte-identical across all three.
+- Assessment: Known duplication; parked item #18 on the roadmap tracks this. Blocked on Claude Code not yet supporting `imports:` / `extends:` in agent frontmatter.
+- Confidence: HIGH (known, parked)
+
+### Category: Repository Hygiene
+
+**Finding 13 — Two prior audit cycles' outputs checked into the repo**
+- Files: `docs/audit/*.md`, `docs/audit/health-check-2026-04.md`
+- Observed: The repo tracks audit outputs. The `status.json` is also tracked. Running `/audit` mutates these files, which affects the working tree during audit runs.
+- Assessment: Intentional (audit trail is useful). But it means that if a contributor runs `/audit` locally without meaning to commit, they'll produce a dirty working tree. The stop-hook `~/.claude/stop-hook-git-check.sh` then asks them to commit.
+- Suggested fix: Consider moving transient audit state (`status.json`) under `.gitignore` and keeping only the finished phase markdown files tracked. Or leave as-is and document the expectation in `.claude/commands/audit.md`.
 - Confidence: LOW
-
-**Finding 8: Stage 3 is numbered but missing from `/status` command output**
-- File: `.claude/commands/status.md:21-30`
-- Convention: Pipeline has 8 stages (`.claude/rules/pipeline.md`)
-- Observed: The example output in `status.md` jumps from Stage 02 to Stage 04, skipping Stage 03 (Pre-Build Clarification). Since Stage 3 doesn't write a gate file, the status dashboard doesn't show it.
-- Suggested fix: Add Stage 03 to the status template, even if it shows "N/A" or "auto" when there are no open questions.
-- Confidence: **MEDIUM**
-
-**Finding 9: `pipeline-status.md` and `status.md` overlap in purpose**
-- Files: `.claude/commands/pipeline-status.md` and `.claude/commands/status.md`
-- Convention: Commands should have distinct purposes
-- Observed: Both commands read gate files and report pipeline status. `pipeline-status.md` is described as a "compact dump" for pre-compaction context saving. `status.md` is the user-facing dashboard. The distinction is documented but may confuse users.
-- Suggested fix: Consider merging into one command with a `--compact` flag, or clarify the difference in README.
-- Confidence: **LOW**
-
-### Category: Consistency in Agent Definitions
-
-**Finding 10: PM agent doesn't load the `review-rubric` skill but reviews PRs indirectly**
-- File: `.claude/agents/pm.md`
-- Observed: PM is asked to review test results (Stage 7) and confirm scope fit (Stage 2). The 3 dev agents all load `review-rubric` and `security-checklist`. The PM loads neither. The Principal loads `security-checklist` and `api-conventions` but not `review-rubric`.
-- Assessment: **Intentional** — PM reviews requirements fit, not code quality. Principal reviews architecture, not code style. The skill assignments match the roles.
-- Confidence: LOW
-
-**Finding 11: Dev agent PostToolUse lint hooks use `|| true` to suppress failures**
-- Files: `.claude/agents/dev-backend.md:21`, `dev-frontend.md:19`, `dev-platform.md:19`
-- Convention: "Never swallow errors silently"
-- Observed: All 3 dev agents have `command: "cd $(git rev-parse --show-toplevel) && npm run lint --if-present || true"`. The `|| true` means lint failures are silently ignored.
-- Assessment: **Intentional trade-off** — `--if-present` means the target project may not have a lint script. `|| true` prevents hook failure from blocking the agent. However, this means lint violations are invisible during builds.
-- Suggested fix: Consider logging lint output to a file (`npm run lint --if-present 2>&1 | tee pipeline/lint-output.txt || true`) so lint issues are captured even if not blocking.
-- Confidence: **MEDIUM**
 
 ---
 
+## Resolved Since Prior Audit
+
+Verified cleared against prior `03-compliance.md` findings:
+
+- Missing `.gitignore` → added, comprehensive.
+- No JSDoc in `build-presentation.js` → 19 JSDoc blocks present.
+- Stage 3 missing from `/status` → added.
+- `pipeline-status` / `status` overlap → renamed to `pipeline-context`.
+- Dev lint hooks silently discard output → now `tee` into `pipeline/lint-output.txt`.
+
 ## Possibly Intentional Deviations
 
-1. **`SKILL.md` naming** — SCREAMING_CASE file inside kebab-case directories. This is Claude Code convention, not a project choice.
-2. **`AGENTS.md` duplication** — Intentional compatibility shim for non-Claude-Code tools.
-3. **PM without review-rubric** — Role-appropriate skill assignment.
-4. **`|| true` in lint hooks** — Pragmatic choice for framework that must work in projects without linting.
-5. **`build-presentation.js` style** — This file is a standalone tool, not part of the framework runtime. Convention enforcement may be lower priority here.
+1. **`SKILL.md` SCREAMING_CASE inside kebab-case dirs** — Claude Code convention, not a project choice.
+2. **`AGENTS.md` duplicating CLAUDE.md** — Intentional compatibility shim for non-Claude-Code tools.
+3. **`|| true` in lint hooks** — Pragmatic; output is now captured so visibility is retained.
+4. **ESLint stub** — Defensible on a tiny JS surface area (~900 LOC excluding tests).
+5. **Two near-identical dev agents** — Parked; platform-blocked on `imports:` support.
+
+## Summary
+
+Compliance posture is **solid and improving**. Of the original audit's 11 compliance findings, **7 are fully resolved** by April 2026 health-check work (gitignore, JSDoc, Stage 3 visibility, command rename, lint hook output capture, plus architecture-consistency items). The remaining open items (ESLint stub, lint-script naming, gate-validator defensive error handling, near-empty CLAUDE.md) are all low-to-medium severity and have clear, small fixes. Nothing here is blocking or architectural.
