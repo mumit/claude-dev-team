@@ -5,6 +5,9 @@ Includes a PM, Principal Engineer, and three specialist developers with
 peer code review, human checkpoints, deterministic gate validation,
 a hotfix path, codebase auditing, and a roadmap workflow.
 
+New here? Start with [**docs/concepts.md**](docs/concepts.md) for
+one-sentence definitions of agent, command, skill, rule, and hook.
+
 ---
 
 ## Prerequisites
@@ -279,6 +282,7 @@ files are untouched.
 
 The `docs/` directory includes materials for presenting and sharing the framework:
 
+- **[docs/concepts.md](docs/concepts.md)** — One-page primer: what an agent, command, skill, rule, and hook each are (and how they compose)
 - **[docs/lifecycle.md](docs/lifecycle.md)** — Full written guide covering audit, implement, review, pipeline, safety model, and maintenance
 - **[docs/faq.md](docs/faq.md)** — Frequently asked questions from technical teams evaluating the framework
 - **[docs/build-presentation.js](docs/build-presentation.js)** — Node script to generate an 18-slide `.pptx` deck (`npm install pptxgenjs react-icons react react-dom sharp && node docs/build-presentation.js`)
