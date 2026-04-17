@@ -57,6 +57,18 @@ a clearer alias for `lint:frontmatter`. pipeline/context.md got a SEED
 FILE header. Deny list tightened against `git push -f` and
 `--force-with-lease`. All 98 tests green on Node 20 and 22.
 
+2026-04-17 — Batch 2 (roadmap P1): 7 S items. Added `docs/concepts.md`
+primer and linked from README + CONTRIBUTING. Wrapped `gate-validator.js`
+in a top-level try/catch (unexpected throws now log WARN and exit 0
+instead of halting the pipeline; new 14th subtest covers this). CI
+matrix expanded to `{ubuntu-latest, macos-latest} × {Node 20, 22}` with
+`npm audit --audit-level=high` gate between install and test.
+`build-presentation.js` honors `BUILD_PRESENTATION_OUT` env var; smoke
+test now builds a real .pptx end-to-end. CONTRIBUTING.md gained
+"Adding a new command / skill / agent" how-to with frontmatter
+examples. ESLint tightened with `eqeqeq`, `no-var`, `prefer-const`,
+`no-unused-vars`. All 100 tests green.
+
 ---
 
 ## Key Decisions (running log)

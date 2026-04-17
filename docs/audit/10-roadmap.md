@@ -40,13 +40,15 @@ Seven items delivering specific user-facing value. Each makes sense as its own P
 
 | # | Item | Effort | Depends on | Verification |
 |---|---|---|---|---|
-| 8 | "Concepts" section in README or `docs/concepts.md` | S | None | One-paragraph definitions for agent / command / skill / rule / hook |
-| 9 | Top-level try/catch in `gate-validator.js` | S | None | New unit test: internal throw exits 0 with WARN message |
-| 10 | `npm audit --audit-level=high` in CI | XS–S | None | CI fails on introduced high/critical CVEs |
-| 11 | `macos-latest` in CI matrix | XS | Item 3 (bootstrap pipefail) landed | Matrix green on both runners |
-| 12 | Runtime smoke test for `build-presentation.js` | S | None | `--dry-run` / `--out` flag in builder; test runs end-to-end |
-| 13 | "Adding a new command / skill / agent" in CONTRIBUTING.md | S | Item 8 useful but not required | Prose present; copy-paste example works |
-| 14 | Tighten ESLint rules beyond `recommended` | S | None | `npm run lint` still green; small cleanup accepted if needed |
+| 8 | [DONE] "Concepts" section in README or `docs/concepts.md` | S | None | One-paragraph definitions for agent / command / skill / rule / hook |
+| 9 | [DONE] Top-level try/catch in `gate-validator.js` | S | None | New unit test: internal throw exits 0 with WARN message |
+| 10 | [DONE] `npm audit --audit-level=high` in CI | XS–S | None | CI fails on introduced high/critical CVEs |
+| 11 | [DONE] `macos-latest` in CI matrix | XS | Item 3 (bootstrap pipefail) landed | Matrix green on both runners |
+| 12 | [DONE] Runtime smoke test for `build-presentation.js` | S | None | `BUILD_PRESENTATION_OUT` env var in builder; test runs end-to-end |
+| 13 | [DONE] "Adding a new command / skill / agent" in CONTRIBUTING.md | S | Item 8 useful but not required | Prose present; copy-paste example works |
+| 14 | [DONE] Tighten ESLint rules beyond `recommended` | S | None | `npm run lint` still green; small cleanup accepted if needed |
+
+**Completed**: 2026-04-17. `docs/concepts.md` added and linked from README + CONTRIBUTING; `gate-validator.js` wrapped with internal-error catch (14 subtests now); CI matrix expanded to `{ubuntu-latest, macos-latest} × {Node 20, 22}` with `npm audit --audit-level=high` gate; smoke test builds a real .pptx via `BUILD_PRESENTATION_OUT`; CONTRIBUTING.md has full how-to sections; ESLint adds `eqeqeq`, `no-var`, `prefer-const`, `no-unused-vars`. All 100 tests green.
 
 **Estimated effort**: 1–2 working days total if done serially.
 
