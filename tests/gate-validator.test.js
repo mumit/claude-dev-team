@@ -252,4 +252,20 @@ describe("gate-validator.js", () => {
     assert.equal(result.status, 0);
     assert.match(result.stdout, /GATE PASS/);
   });
+
+  // ── Internal error handling ─────────────────────────────
+
+  it("exits 0 with a WARN message on unexpected internal error", () => {
+    // Simulate an unexpected filesystem error by making pipeline/gates a
+    // regular file instead of a directory. fs.existsSync returns true, but
+    // fs.readdirSync then throws ENOTDIR — which must NOT halt the pipeline.
+    const pipelineDir = path.join(tmpDir, "pipeline");
+    fs.mkdirSync(pipelineDir, { recursive: true });
+    fs.writeFileSync(path.join(pipelineDir, "gates"), "not a directory");
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /internal error/);
+    assert.match(result.stdout, /treating as PASS/);
+  });
 });
