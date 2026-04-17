@@ -1,5 +1,12 @@
 # Project Context
 
+<!--
+  SEED FILE — this copy lives in the framework repo and is copied into target
+  projects by bootstrap.sh on first install. Editing here changes the template
+  for new installs; it is NOT the live pipeline context. The live file lives
+  at pipeline/context.md in each target project.
+-->
+
 This file is append-only. All agents read it at spawn.
 Never delete or overwrite existing entries.
 

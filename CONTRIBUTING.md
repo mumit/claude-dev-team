@@ -20,9 +20,14 @@ npm install
 ```bash
 npm test                    # unit tests (gate-validator, etc.)
 npm run test:integration    # integration tests (bootstrap.sh)
+npm run test:frontmatter    # YAML frontmatter schema tests for agents/skills
 ```
 
 All tests use Node's built-in `node:test` runner — no external test framework needed.
+
+> Note: `npm run lint:frontmatter` is a historical alias for `test:frontmatter` —
+> both run the same frontmatter schema test file. The `lint:` prefix predates
+> the test-runner rename; prefer `test:frontmatter` in new docs.
 
 ## Project Structure
 
