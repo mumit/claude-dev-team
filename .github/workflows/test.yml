@@ -8,9 +8,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest]
         node-version: [20, 22]
 
     steps:
@@ -20,9 +22,18 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - run: sudo apt-get install -y rsync
+      - name: Install rsync (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y rsync
+
+      - name: Verify rsync available (macOS)
+        if: runner.os == 'macOS'
+        run: rsync --version
 
       - run: npm install
+
+      - name: Audit devDependencies (high + critical)
+        run: npm audit --audit-level=high
 
       - run: npm run lint
 
