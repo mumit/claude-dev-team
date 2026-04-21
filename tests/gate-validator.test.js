@@ -268,4 +268,219 @@ describe("gate-validator.js", () => {
     assert.match(result.stdout, /internal error/);
     assert.match(result.stdout, /treating as PASS/);
   });
+
+  // ── v2.1: bypassed escalation detection ─────────────────
+
+  it("exits 3 when an older gate is ESCALATE and a newer gate exists", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+
+    // Older ESCALATE gate
+    const older = writeGate(gatesDir, "stage-02.json", gate({
+      stage: "stage-02",
+      status: "ESCALATE",
+      agent: "principal",
+      escalation_reason: "Ambiguous auth boundary",
+      decision_needed: "Server or client-side session?",
+    }));
+    const pastTime = new Date(Date.now() - 5000);
+    fs.utimesSync(older, pastTime, pastTime);
+
+    // Newer PASS gate — this is the bypass signal
+    writeGate(gatesDir, "stage-04-backend.json", gate({
+      stage: "stage-04-backend",
+      status: "PASS",
+      agent: "dev-backend",
+    }));
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 3);
+    assert.match(result.stdout, /BYPASSED ESCALATION/);
+    assert.match(result.stdout, /stage-02/);
+    assert.match(result.stdout, /Ambiguous auth boundary/);
+  });
+
+  it("does NOT flag a bypass when the ESCALATE gate is the most recent", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+
+    // Older PASS gate
+    const older = writeGate(gatesDir, "stage-01.json", gate({ stage: "stage-01" }));
+    const pastTime = new Date(Date.now() - 5000);
+    fs.utimesSync(older, pastTime, pastTime);
+
+    // Newer ESCALATE gate — the normal "halt now" case, not a bypass
+    writeGate(gatesDir, "stage-02.json", gate({
+      stage: "stage-02",
+      status: "ESCALATE",
+      agent: "principal",
+      escalation_reason: "Waiting on user",
+      decision_needed: "Pick an option",
+    }));
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 3);
+    // Must NOT use the bypass phrasing — this is a live escalation
+    assert.doesNotMatch(result.stdout, /BYPASSED/);
+    assert.match(result.stdout, /ESCALATION REQUIRED/);
+  });
+
+  // ── v2.1: retry integrity ───────────────────────────────
+
+  it("exits 1 on a retry gate with empty this_attempt_differs_by", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-06.json", gate({
+      stage: "stage-06",
+      status: "FAIL",
+      agent: "dev-platform",
+      retry_number: 1,
+      this_attempt_differs_by: "",
+    }));
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /retry_number=1 requires non-empty this_attempt_differs_by/);
+  });
+
+  it("exits 1 on a retry gate missing this_attempt_differs_by", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-06.json", gate({
+      stage: "stage-06",
+      status: "FAIL",
+      agent: "dev-platform",
+      retry_number: 2,
+    }));
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /this_attempt_differs_by/);
+  });
+
+  it("accepts a retry gate with a populated this_attempt_differs_by", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-06.json", gate({
+      stage: "stage-06",
+      status: "FAIL",
+      agent: "dev-platform",
+      retry_number: 1,
+      this_attempt_differs_by: "Added explicit timeout to the flaky test",
+    }));
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 2); // FAIL is the expected primary exit
+  });
+
+  // ── v2.1: track field advisory ──────────────────────────
+
+  it("emits an advisory when track field is missing", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-01.json", gate()); // no "track"
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /missing "track" field/);
+  });
+
+  it("emits an advisory when track field is unrecognised", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-01.json", gate({ track: "make-believe" }));
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /unrecognised track/);
+  });
+
+  it("accepts all known track values silently", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-01.json", gate({ track: "quick" }));
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    assert.doesNotMatch(result.stdout, /missing "track"|unrecognised track/);
+  });
+
+  // ── v2.1: lessons-learned.md Reinforced: line validation ──
+
+  it("warns on a malformed Reinforced: line in lessons-learned.md", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-01.json", gate({ track: "full" }));
+
+    const lessonsPath = path.join(tmpDir, "pipeline", "lessons-learned.md");
+    // N/A is a classic placeholder that the retrospective parser contract forbids
+    fs.writeFileSync(
+      lessonsPath,
+      [
+        "### L001 — Example",
+        "**Added:** 2026-04-01",
+        "**Reinforced:** N/A",
+        "**Rule:** ...",
+        "",
+      ].join("\n"),
+    );
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /lessons-learned\.md:3 malformed/);
+  });
+
+  it("accepts `**Reinforced:** 0` (no suffix) as valid", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-01.json", gate({ track: "full" }));
+
+    const lessonsPath = path.join(tmpDir, "pipeline", "lessons-learned.md");
+    fs.writeFileSync(
+      lessonsPath,
+      [
+        "### L001 — Example",
+        "**Added:** 2026-04-01",
+        "**Reinforced:** 0",
+        "**Rule:** ...",
+        "",
+      ].join("\n"),
+    );
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    assert.doesNotMatch(result.stdout, /malformed/);
+  });
+
+  it("accepts `**Reinforced:** N (last: YYYY-MM-DD)` as valid", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-01.json", gate({ track: "full" }));
+
+    const lessonsPath = path.join(tmpDir, "pipeline", "lessons-learned.md");
+    fs.writeFileSync(
+      lessonsPath,
+      [
+        "### L002 — Another",
+        "**Added:** 2026-04-01",
+        "**Reinforced:** 3 (last: 2026-05-14)",
+        "**Rule:** ...",
+        "",
+      ].join("\n"),
+    );
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    assert.doesNotMatch(result.stdout, /malformed/);
+  });
+
+  it("does not scan lessons-learned.md when the file does not exist", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-01.json", gate({ track: "full" }));
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    assert.doesNotMatch(result.stdout, /malformed/);
+  });
 });

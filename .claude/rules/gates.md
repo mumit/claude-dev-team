@@ -96,3 +96,53 @@ On FAIL gates with retries, include:
 
 If `retry_number` >= 2 AND `failing_tests` matches previous FAIL gate exactly:
 set `"status": "ESCALATE"` and halt. Same failure twice = escalate, don't retry.
+
+**Enforced since v2.1**: the validator exits 1 on any gate where
+`retry_number >= 1` but `this_attempt_differs_by` is missing or empty. The
+fix is to state the delta explicitly before re-writing the gate.
+
+---
+
+## Track field (v2.0+)
+
+Every gate should carry a `"track"` field identifying which pipeline
+track the gate belongs to. Valid values: `full`, `quick`, `config-only`,
+`dep-update`, `hotfix`.
+
+```json
+{ "track": "full" }
+```
+
+The validator emits an advisory (non-blocking) when the field is missing
+or carries an unrecognised value. Legacy gates written before v2.0 don't
+carry the field — they still pass, but downstream tooling that branches on
+track should treat "missing" as "full" for backward compatibility.
+
+---
+
+## What the validator enforces (v2.1)
+
+The `gate-validator.js` hook runs after every subagent stop. As of v2.1
+it performs these checks in order:
+
+1. **Bypassed-escalation sweep.** Across all gate files, if any gate has
+   `"status": "ESCALATE"` but is not the most recently modified, the
+   pipeline has written a later gate without resolving the earlier
+   escalation. The validator exits 3 and reports which gate was bypassed.
+2. **Most-recent-gate status.** The primary exit code still reflects the
+   most recently modified gate: 0 on PASS, 2 on FAIL, 3 on ESCALATE.
+3. **Required-field presence.** Exits 1 on gates missing any of `stage`,
+   `status`, `agent`, `timestamp`, `blockers`, `warnings`.
+4. **Retry integrity.** Exits 1 when `retry_number >= 1` without a
+   non-empty `this_attempt_differs_by` string (see above).
+5. **Advisory: track field.** Warns without halting when `track` is
+   missing or unrecognised.
+6. **Advisory: lessons-learned format.** Scans `pipeline/lessons-learned.md`
+   for malformed `**Reinforced:**` lines. Only two forms are valid:
+   - `**Reinforced:** 0` (no suffix; lesson has never been reinforced)
+   - `**Reinforced:** <N> (last: YYYY-MM-DD)` where N ≥ 1
+
+Unexpected internal errors in the validator itself are downgraded to a
+WARN and exit 0 so a bug in the hook never halts a live pipeline. The
+test suite at `tests/gate-validator.test.js` is the authoritative check
+for correct validator behaviour.
