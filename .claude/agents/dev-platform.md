@@ -152,125 +152,85 @@ missing/weak Plan with unverifiable steps (§4). See
 
 Classify as BLOCKER / SUGGESTION / QUESTION inside each section.
 
-## On a Deploy Task
+## On a Deploy Task (v2.4+ — adapter-driven)
 
-### 1. Gate check
-Read `pipeline/gates/stage-07.json`. Confirm `"pm_signoff": true`.
-If missing or false: write `"status": "ESCALATE"` to `pipeline/gates/stage-08.json`
-with `"escalation_reason": "PM sign-off missing — cannot deploy"` and halt.
+Stage 8 is adapter-driven from v2.4 forward. You do not hardcode a
+deploy procedure — you read `.claude/config.yml`, discover which
+adapter the project has selected, and follow that adapter's
+instructions in `.claude/adapters/<adapter>.md`.
 
-### 2. Confirm docker-compose.yml exists
-Check for `docker-compose.yml` (or `docker-compose.yaml`) in the project root.
-If missing: write `"status": "ESCALATE"` with reason "No docker-compose.yml found".
+### Step 0 — Common preconditions (every adapter)
 
-### 3. Validate compose config
-```bash
-docker compose config --quiet
-```
-If this fails: capture the error, write `"status": "FAIL"` with the error
-as a blocker, halt. Do not proceed to a broken deploy.
+Before loading the adapter-specific steps, these gates fail the
+deploy regardless of adapter:
 
-### 4. Pull any upstream base images
-```bash
-docker compose pull --ignore-pull-failures
-```
-Non-fatal — log warnings but continue if a service has no upstream image
-(i.e. it's build-only).
+1. **PM sign-off.** Read `pipeline/gates/stage-07.json`. Confirm
+   `"pm_signoff": true`. If missing or false: write
+   `"status": "ESCALATE"` to `pipeline/gates/stage-08.json` with
+   `"escalation_reason": "PM sign-off missing — cannot deploy"` and
+   halt.
+2. **Runbook.** Confirm `pipeline/runbook.md` exists and contains at
+   minimum a `## Rollback` and `## Health signals` section. If
+   missing or incomplete: write `"status": "ESCALATE"` with reason
+   "Runbook required for Stage 8 (v2.4+)". Point the user to
+   `docs/runbook-template.md`.
+3. **Config.** Read `.claude/config.yml`. Find
+   `deploy.adapter`. Accept one of: `docker-compose`, `kubernetes`,
+   `terraform`, `custom`. Unknown adapter: write
+   `"status": "ESCALATE"` with reason "Unknown deploy adapter
+   '<name>'; see `.claude/adapters/README.md`".
 
-### 5. Build images
-```bash
-docker compose build --no-cache
-```
-If exit code non-zero: write `"status": "FAIL"`, include build output as
-blocker. Do not proceed.
+### Step 1 — Load adapter instructions
 
-### 6. Stop existing containers gracefully
-```bash
-docker compose down --remove-orphans --timeout 30
-```
-This drains existing containers before starting new ones.
+Read `.claude/adapters/<adapter>.md`. Each adapter is a self-contained
+procedure document covering:
 
-### 7. Start services
-```bash
-docker compose up -d --wait
-```
-`--wait` blocks until all services with healthchecks report healthy.
-If a service has no healthcheck, `--wait` returns immediately — see step 8.
+- Assumptions it makes about the environment
+- The config block it reads from `.claude/config.yml`
+- A numbered procedure for the deploy
+- The `adapter_result` block shape for the stage-08 gate
+- Runbook hooks (which sections of `pipeline/runbook.md` it leans on)
 
-### 8. Smoke tests
-Wait 5 seconds after `up` returns, then run smoke tests.
+Follow the adapter's procedure step by step. Adapters are
+authoritative for their own deploy story — do not substitute shell
+commands from a different adapter.
 
-For each service defined in `docker-compose.yml`, run the appropriate check:
+### Step 2 — Write outputs
 
-**HTTP service** (has `ports:` mapping to 80/443/3000/8000/8080 etc.):
-```bash
-curl -sf --retry 3 --retry-delay 2 http://localhost:<PORT>/health || \
-curl -sf --retry 3 --retry-delay 2 http://localhost:<PORT>/
-```
-Use the actual port from `docker-compose.yml`. A 2xx or 3xx response passes.
+Every adapter's procedure ends with writing two artefacts:
 
-**Non-HTTP service** (database, queue, worker):
-```bash
-docker compose ps --format json | grep -q '"Status":"running"'
-```
+1. **`pipeline/deploy-log.md`**: human-readable record of the deploy,
+   including a `**Runbook**: pipeline/runbook.md §<section>` line
+   that points a future on-call engineer at the recovery procedure.
+2. **`pipeline/gates/stage-08.json`**: gate with the baseline fields
+   required by `.claude/rules/gates.md` plus:
+   ```json
+   {
+     "adapter": "<name>",
+     "environment": "<env>",
+     "smoke_test_passed": true,
+     "runbook_referenced": true,
+     "adapter_result": { /* adapter-specific */ }
+   }
+   ```
 
-If any smoke test fails:
-```bash
-docker compose logs --tail=50
-```
-Capture the logs, write `"status": "FAIL"` with logs as the blocker.
-Do NOT roll back automatically — log the failure and halt so the user
-can inspect and decide.
+### Step 3 — Failure handling (every adapter)
 
-### 9. Record container state
-```bash
-docker compose ps
-docker compose images
-```
-Include this output in `pipeline/deploy-log.md`.
+On any step failure: write `"status": "FAIL"` with the failing output
+as a blocker, halt. **Do NOT auto-rollback.** The runbook names the
+rollback procedure and the orchestrator surfaces it to the user; a
+human decides whether to roll back immediately or investigate first.
 
-### 10. Write outputs
-Write `pipeline/deploy-log.md`:
-```
-# Deploy Log
+The user can follow the runbook's `§Rollback` section. Do not execute
+rollback from the agent unless the adapter explicitly declares
+auto-rollback is safe for it (none of the built-in adapters do).
 
-**Date**: <ISO timestamp>
-**Method**: docker compose (local)
+### Adapter reference
 
-## Services Started
-<output of docker compose ps>
-
-## Images
-<output of docker compose images>
-
-## Smoke Test Results
-<pass/fail per service with endpoint or check used>
-
-## Known Limitations
-<any warnings from earlier steps>
-```
-
-Write `pipeline/gates/stage-08.json`:
-```json
-{
-  "stage": "stage-08",
-  "status": "PASS",
-  "agent": "dev-platform",
-  "timestamp": "<ISO>",
-  "environment": "local",
-  "compose_file": "docker-compose.yml",
-  "services_started": ["<list>"],
-  "smoke_test_passed": true,
-  "blockers": [],
-  "warnings": []
-}
-```
-
-### Failure rollback note
-On `"status": "FAIL"`: do NOT automatically run `docker compose down`.
-Leave the failed state running so the user can inspect logs with
-`docker compose logs`. Write the failure gate and halt.
-The user can run `docker compose down` manually if they want to clean up.
+See `.claude/adapters/README.md` for the full list and the contract
+adapters must satisfy. To add a new adapter (e.g. for a specific
+cloud's deploy tooling), follow the "Writing a new adapter" section
+there.
 
 ## On a Retrospective Task
 

@@ -177,13 +177,57 @@ called out per release below. Full upgrade path: `docs/migration/v1-to-v2.md`.
   objects, previously `[string]`. Parsers should switch to reading the
   object's `reviewer` field.
 
+### Added — `v2.4.0` (in progress — deploy adapters + runbook requirement)
+
+- **Deployment adapter seam.** Stage 8 no longer hardcodes
+  `docker compose`. Projects pick an adapter in `.claude/config.yml`
+  (`deploy.adapter`), and `dev-platform` reads the selected adapter's
+  instructions from `.claude/adapters/<adapter>.md`. Built-in
+  adapters:
+  - `docker-compose` (default, feature-complete — same flow as v1–v2.3)
+  - `kubernetes` (skeleton with `TODO(project)` markers)
+  - `terraform` (skeleton with `TODO(project)` markers)
+  - `custom` (escape hatch — project-provided deploy script)
+- **`.claude/config.yml` (new).** Project configuration for the
+  adapter selection and per-adapter settings. Preserved across
+  bootstrap runs — your config never gets overwritten.
+- **Runbook requirement.** Stage 8 now requires `pipeline/runbook.md`
+  to exist and carry at minimum `## Rollback` and `## Health signals`
+  sections. Missing runbook → `status: ESCALATE` at Stage 8 start.
+  See `docs/runbook-template.md` for the canonical shape.
+- **Stage 8 gate schema.** New fields: `adapter`, `runbook_referenced`,
+  `adapter_result` (adapter-specific nested block). The old
+  hardcoded `compose_file` field is gone from the baseline; it now
+  lives under `adapter_result` for the `docker-compose` adapter.
+- **bootstrap.sh** seeds `.claude/config.yml` on first install but
+  never overwrites a user-edited config on re-runs.
+
+### Breaking changes — `v2.4.0`
+
+- **Stage 8 gate schema changed.** `compose_file` and
+  `services_started` moved from the gate baseline into
+  `adapter_result.compose_file` and `adapter_result.services_started`
+  for the `docker-compose` adapter. Downstream tooling reading these
+  must update.
+- **`.claude/config.yml` is now required** for the `dev-platform`
+  deploy task. Running without it triggers `status: ESCALATE` with
+  `"Unknown deploy adapter"`. Bootstrap creates it automatically
+  with the docker-compose default, so projects already bootstrapped
+  are fine — but projects that hand-installed prior versions need
+  to create it.
+- **`pipeline/runbook.md` is now required** at Stage 8. This is a
+  real behavioural change for in-flight pipelines — the deploy will
+  halt until a runbook is written. Use `docs/runbook-template.md` as
+  a starting point; a minimal runbook for a trivial feature can be
+  ~30 lines.
+- Tooling that hardcoded `docker compose` commands based on reading
+  Stage 8 gates should now branch on `adapter` first.
+
 ### Still pending in `v2.x`
 
 The following planned items ship in later `v2.x` releases, as they break
 orthogonal things and benefit from staged rollout:
 
-- `v2.4` — Deployment-adapter seam (`.claude/adapters/{docker-compose,k8s,
-  terraform}/`). Runbook requirement on Stage 8.
 - `v2.5` — Budget gate, cross-run meta-retro, lesson auto age-out, positive
   review channel (`PATTERN` tag), async-friendly checkpoints.
 

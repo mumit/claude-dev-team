@@ -51,16 +51,26 @@ fi
 
 echo ""
 
-# ── Copy .claude/ (overwrite framework files, preserve .local.) ──
+# ── Copy .claude/ (overwrite framework files, preserve .local. and config.yml) ──
 echo "📁  Copying .claude/ ..."
 if [ -d "$TARGET/.claude" ]; then
-  echo "    .claude/ exists — overwriting framework files (*.local.* files preserved)"
+  echo "    .claude/ exists — overwriting framework files (*.local.*, config.yml preserved)"
 fi
-# rsync with --exclude preserves user's local overrides and settings
+# rsync with --exclude preserves user's local overrides and project config
 rsync -a \
   --exclude='settings.local.json' \
   --exclude='*.local.*' \
+  --exclude='config.yml' \
   "$SCRIPT_DIR/.claude/" "$TARGET/.claude/"
+
+# Seed .claude/config.yml only on first install (v2.4+). User's existing
+# config is never overwritten — they customise it for their project.
+if [ ! -f "$TARGET/.claude/config.yml" ]; then
+  cp "$SCRIPT_DIR/.claude/config.yml" "$TARGET/.claude/config.yml"
+  echo "📄  Created .claude/config.yml (yours to customise — deploy adapter selection)"
+else
+  echo "⏭️   .claude/config.yml already exists — not touched"
+fi
 
 # ── Create root files only if they don't exist ────────────
 if [ ! -f "$TARGET/CLAUDE.md" ]; then
@@ -149,9 +159,10 @@ echo "  2. Customise your stack conventions:"
 echo "       $TARGET/.claude/skills/code-conventions/SKILL.md"
 echo "       $TARGET/.claude/skills/api-conventions/SKILL.md"
 echo ""
-echo "  3. Add your deploy steps to:"
-echo "       $TARGET/.claude/agents/dev-platform.md"
-echo "       (search: 'On a Deploy Task')"
+echo "  3. Pick your deploy adapter:"
+echo "       $TARGET/.claude/config.yml — set deploy.adapter"
+echo "       See $TARGET/.claude/adapters/ for the built-in adapters"
+echo "       (docker-compose is the default)"
 echo ""
 echo "  4. Start Claude Code:"
 echo "       cd $TARGET && claude"

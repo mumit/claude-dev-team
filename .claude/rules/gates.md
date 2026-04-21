@@ -173,10 +173,35 @@ tooling that filters gates by author should allow both values for
 stage-07. See `.claude/rules/pipeline.md` Stage 7 for the skip
 conditions.
 
-### Stage 08 (Deploy)
+### Stage 08 (Deploy, adapter-driven v2.4+)
 ```json
-{ "environment": "production", "smoke_test_passed": true }
+{
+  "stage": "stage-08",
+  "status": "PASS",
+  "agent": "dev-platform",
+  "track": "<track>",
+  "timestamp": "<ISO>",
+  "adapter": "docker-compose | kubernetes | terraform | custom",
+  "environment": "<adapter-specific>",
+  "smoke_test_passed": true,
+  "runbook_referenced": true,
+  "adapter_result": { "<adapter-specific fields>": "..." },
+  "blockers": [],
+  "warnings": []
+}
 ```
+
+The gate passes only when `status: "PASS"` AND `runbook_referenced:
+true`. The runbook check confirms that `pipeline/runbook.md` exists
+and contains at minimum `## Rollback` and `## Health signals`
+sections — a missing runbook causes `status: "ESCALATE"` at the
+start of Stage 8, not a FAIL later.
+
+The `adapter` field identifies which adapter ran. The
+`adapter_result` block carries fields specific to that adapter — see
+`.claude/adapters/<adapter>.md` for the per-adapter shape. Tooling
+that reads stage-08 gates should branch on `adapter` before reading
+`adapter_result`.
 
 ### Stage 09 (Retrospective)
 Informational gate — status is PASS unless synthesis itself failed.

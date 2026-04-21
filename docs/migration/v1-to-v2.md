@@ -248,12 +248,91 @@ Delete `.claude/hooks/approval-derivation.js` and remove the
 writing approval arrays directly per v2.3 rules. Legacy single-verdict
 review files start working again.
 
-## `v2.4.0` — Deployment-adapter seam (forthcoming)
+## `v2.4.0` — Deployment-adapter seam + runbook requirement
 
-*Ships in a follow-up release.* Stage 8 stops assuming `docker-compose.yml`
-exists. Projects declare their adapter (`docker-compose` | `k8s` |
-`terraform` | `custom`) at bootstrap. A migration note will walk users
-through adapter selection.
+### What breaks
+
+- **Stage 8 gate schema changed.** The old hardcoded `compose_file`
+  and `services_started` fields moved from the baseline into
+  `adapter_result.compose_file` and
+  `adapter_result.services_started` for the `docker-compose` adapter.
+  Any downstream tooling that reads these fields needs to look one
+  level deeper.
+- **`.claude/config.yml` is required.** Without it, `dev-platform`
+  doesn't know which adapter to use and halts Stage 8 with
+  `ESCALATE`. Bootstrap creates one automatically with the
+  docker-compose default, so projects that re-bootstrap are fine.
+  Projects that installed by hand before v2.4 must create the file.
+- **`pipeline/runbook.md` is required.** Stage 8 halts with ESCALATE
+  if the file is missing or lacks `## Rollback` and `## Health
+  signals` sections. See `docs/runbook-template.md`.
+
+### What doesn't break
+
+- Projects using `docker compose` today keep working identically —
+  the default adapter is `docker-compose` and the procedure is
+  verbatim the v1–v2.3 flow.
+- Stages 1–7 and 9 are unchanged.
+- The gate-validator, approval-derivation hook, and Stage 5 format
+  from v2.3.1 all work unchanged.
+
+### Steps
+
+1. **Re-run bootstrap** against the target project. `.claude/adapters/`,
+   `.claude/config.yml` (if absent), `docs/runbook-template.md`, and
+   the new dev-platform.md land in place. Existing `.claude/config.yml`
+   is preserved.
+2. **Pick an adapter.** Edit `.claude/config.yml`:
+   ```yaml
+   deploy:
+     adapter: docker-compose   # or kubernetes, terraform, custom
+   ```
+   Fill in the per-adapter config block for the one you chose.
+   Built-in adapters' docs are at `.claude/adapters/<adapter>.md`.
+3. **Write a runbook.** Copy `docs/runbook-template.md` to
+   `pipeline/runbook.md` and fill it in. For a trivial feature, the
+   minimum is §Rollback (one command set) and §Health signals (one
+   metric). Don't pad; a 30-line runbook is fine if it answers "how
+   do I fix this at 3am".
+4. **Update downstream tooling.** Anything that reads Stage 8 gates
+   needs to (a) read `adapter` to branch on deployment type, and
+   (b) read previously-baseline fields from `adapter_result` for the
+   matching adapter.
+5. **Dry-run.** Run one pipeline end-to-end to confirm Stage 8
+   reads config, dispatches to the adapter, checks the runbook, and
+   writes the new gate shape.
+
+### Migrating from the hardcoded v1–v2.3 docker-compose flow
+
+If your project was using the hardcoded docker-compose flow:
+
+1. After bootstrap, `.claude/config.yml` will have
+   `deploy.adapter: docker-compose` selected by default.
+2. The adapter's instructions (`.claude/adapters/docker-compose.md`)
+   match the v1–v2.3 flow step-for-step. No behavioural change.
+3. Write `pipeline/runbook.md`. The minimum for a docker-compose
+   project is: "`docker compose down && git checkout <prior-sha> &&
+   docker compose up -d --wait`, verify via curl on `/health`."
+
+### Writing a custom adapter
+
+If none of the built-in adapters fit:
+
+1. Start from `.claude/adapters/custom.md` if your deploy is already
+   a shell script. Point `deploy.custom.script` at it.
+2. For anything more structured (deploying through an internal CD
+   system, an API-driven platform, etc.), copy
+   `.claude/adapters/docker-compose.md` as a template, rewrite the
+   procedure, and commit it as `.claude/adapters/<your-name>.md`.
+   Follow the contract in `.claude/adapters/README.md`.
+
+### Rollback
+
+`v2.4` adds new files; removing `.claude/adapters/`, deleting
+`.claude/config.yml`, and reverting `dev-platform.md` restores the
+v2.3 hardcoded docker-compose path. The Stage 8 gate reverts to the
+v2.3 shape automatically (no migration of existing gate files
+needed).
 
 ## `v2.5.0` — Learning loop and budget (forthcoming)
 

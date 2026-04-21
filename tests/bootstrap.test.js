@@ -183,6 +183,49 @@ describe('bootstrap.sh', () => {
     assert.equal(fs.readFileSync(localSettings, 'utf8'), '{"custom": true}\n');
   });
 
+  it('seeds .claude/config.yml on first install (v2.4+)', () => {
+    run(target);
+    const configPath = path.join(target, '.claude', 'config.yml');
+    assert.ok(fs.existsSync(configPath), 'config.yml should be created on first install');
+    const content = fs.readFileSync(configPath, 'utf8');
+    assert.match(content, /deploy:/, 'config.yml should declare the deploy block');
+    assert.match(content, /adapter: docker-compose/, 'default adapter should be docker-compose');
+  });
+
+  it('preserves edited .claude/config.yml on re-install (v2.4+)', () => {
+    fs.mkdirSync(path.join(target, '.claude'), { recursive: true });
+    const configPath = path.join(target, '.claude', 'config.yml');
+    const customised = 'deploy:\n  adapter: kubernetes\n  kubernetes:\n    namespace: my-app\n';
+    fs.writeFileSync(configPath, customised);
+    run(target);
+    assert.equal(
+      fs.readFileSync(configPath, 'utf8'),
+      customised,
+      'user-edited config.yml should not be overwritten',
+    );
+  });
+
+  it('installs .claude/adapters/ with all built-in adapters (v2.4+)', () => {
+    run(target);
+    const adaptersDir = path.join(target, '.claude', 'adapters');
+    assert.ok(fs.existsSync(adaptersDir), '.claude/adapters/ should exist');
+    for (const adapter of ['README.md', 'docker-compose.md', 'kubernetes.md', 'terraform.md', 'custom.md']) {
+      assert.ok(
+        fs.existsSync(path.join(adaptersDir, adapter)),
+        `adapter file ${adapter} should be installed`,
+      );
+    }
+  });
+
+  it('dev-platform.md references the adapter seam (v2.4+)', () => {
+    run(target);
+    const platformPath = path.join(target, '.claude', 'agents', 'dev-platform.md');
+    const body = fs.readFileSync(platformPath, 'utf8');
+    assert.match(body, /adapter-driven/i, 'dev-platform.md should mention adapter-driven deploys');
+    assert.match(body, /\.claude\/config\.yml/, 'dev-platform.md should reference config.yml');
+    assert.match(body, /runbook/i, 'dev-platform.md should require a runbook for Stage 8');
+  });
+
   it('makes gate-validator.js executable', () => {
     run(target);
     const hookPath = path.join(target, '.claude', 'hooks', 'gate-validator.js');
