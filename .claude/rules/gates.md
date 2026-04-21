@@ -43,6 +43,13 @@ The orchestrator reads JSON, not prose. Gates are machine-readable.
 }
 ```
 
+**Validity rule:** a Stage 05 gate's `approvals` entry is invalid if the
+named agent modified any file under `src/` during the same invocation.
+The READ-ONLY Reviewer Rule in `pipeline.md` forbids fix-forward patches.
+If a gate-validator hook detects a source-file edit in the same turn as
+an approval, treat the gate as FAIL and re-run the review from the
+clean source tree.
+
 ### Stage 06 (Tests)
 ```json
 {
@@ -63,6 +70,17 @@ The orchestrator reads JSON, not prose. Gates are machine-readable.
 ### Stage 08 (Deploy)
 ```json
 { "environment": "production", "smoke_test_passed": true }
+```
+
+### Stage 09 (Retrospective)
+Informational gate — status is PASS unless synthesis itself failed.
+```json
+{
+  "severity": "green | yellow | red",
+  "lessons_promoted": ["L007 — clarify notify channel in brief"],
+  "lessons_retired": ["L002 — prefer offset pagination"],
+  "contributions_written": ["pm", "principal", "dev-backend", "dev-frontend", "dev-platform"]
+}
 ```
 
 ## Retry Protocol

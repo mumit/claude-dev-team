@@ -70,6 +70,28 @@ Review matrix:
   `dev-frontend` reviews: backend + platform  → writes `pipeline/code-review/by-frontend.md`
   `dev-platform` reviews: backend + frontend  → writes `pipeline/code-review/by-platform.md`
 
+### READ-ONLY Reviewer Rule (strictly enforced)
+
+During a Stage 5 review invocation, a reviewer agent writes ONLY to:
+  - `pipeline/code-review/by-{reviewer}.md` (their review file)
+  - `pipeline/gates/stage-05-{area}.json` (append-only approval gate)
+
+A reviewer agent MUST NOT:
+  - Use `Write` or `Edit` on any file under `src/`
+  - Amend or refactor the author's code, even for a one-line "obvious fix"
+  - Add themselves to `approvals` in a stage-05 gate if they modified any
+    source file during the same invocation — the gate is then invalid
+
+If the reviewer finds a bug, missing guard, or other BLOCKER: they write
+`REVIEW: CHANGES REQUESTED` in their review file, list the blocker, and
+halt. The orchestrator re-invokes the owning dev agent to fix it in their
+own worktree. **No fix-forward. No exceptions for "small" patches.**
+
+Rationale: silent inline fixes bypass the owning dev, skip re-review of
+the patched lines, and leave no audit trail tying the patch to a
+CHANGES-REQUESTED → addressed loop. If the one-line patch has a second
+bug, no reviewer is assigned to catch it.
+
 ### Gate Merge Strategy for Stage 5
 
 Each area gate (`pipeline/gates/stage-05-{area}.json`) must accumulate 2 approvals.
@@ -135,6 +157,37 @@ Post-deploy: invoke `pm` agent to write stakeholder summary.
 
 ---
 
+## Stage 9 — Retrospective (all agents → Principal synthesis)
+
+Full protocol: see `.claude/rules/retrospective.md`.
+
+Runs automatically after Stage 8 (PASS or FAIL) and after any red halt.
+Not gated by user approval — retros on failed runs are the most valuable.
+
+Step 9a — Contribution (parallel, read-heavy):
+  Invoke in parallel: `pm`, `principal`, `dev-backend`, `dev-frontend`,
+  `dev-platform`. Each appends a section to `pipeline/retrospective.md`
+  using the four-heading template. Each produces one concrete lesson.
+
+Step 9b — Synthesis:
+  Invoke: `principal` agent.
+  Input: `pipeline/retrospective.md` + `pipeline/lessons-learned.md`
+  Output: synthesis block prepended to retrospective, updated
+  `pipeline/lessons-learned.md` (max 2 promotions, retire rules proved
+  wrong or reinforced ≥5 times without defect).
+  Gate file: `pipeline/gates/stage-09.json`
+  Gate key: `"status": "PASS"` (informational — only FAIL if synthesis
+  itself failed)
+
+After gate: the orchestrator prints the synthesis block and the list of
+promoted/retired lessons to the user. No checkpoint — pipeline ends here.
+
+**Seeding**: on the first pipeline run in a project, `pipeline/lessons-learned.md`
+does not exist. Principal creates it during synthesis if any lesson is
+promoted. Until then, agents skip the "read lessons-learned" step.
+
+---
+
 ## Stage Duration Expectations
 
 Typical durations for each stage. These are guidelines, not hard limits —
@@ -152,8 +205,9 @@ for a full state dump.
 | 6 — Test & CI | 3-10 min | Depends on test suite size and whether retries are needed. |
 | 7 — PM Sign-off | 1-3 min | Single agent review. |
 | 8 — Deploy | 3-10 min | Docker build + smoke tests. Network-dependent. |
+| 9 — Retrospective | 3-8 min | Parallel contributions + Principal synthesis. Skippable only for trivial hotfixes. |
 
-**Full pipeline**: 25-80 minutes typical, depending on feature complexity.
+**Full pipeline**: 28-88 minutes typical, depending on feature complexity.
 
 **Stall indicators**:
 - Stage 4 taking >30 min: check if a dev agent hit an ambiguity and wrote

@@ -61,6 +61,60 @@ describe('bootstrap.sh', () => {
     assert.ok(content.includes('Dev Team Orchestrator'));
   });
 
+  it('copies coding-principles.md and retrospective.md into .claude/rules/', () => {
+    run(target);
+    const principlesPath = path.join(target, '.claude', 'rules', 'coding-principles.md');
+    assert.ok(fs.existsSync(principlesPath), 'coding-principles.md must be installed');
+    const principles = fs.readFileSync(principlesPath, 'utf8');
+    assert.ok(principles.includes('Think Before Coding'), 'coding-principles.md must include the four principles');
+    assert.ok(principles.includes('Simplicity First'));
+    assert.ok(principles.includes('Surgical Changes'));
+    assert.ok(principles.includes('Goal-Driven Execution'));
+
+    const retroPath = path.join(target, '.claude', 'rules', 'retrospective.md');
+    assert.ok(fs.existsSync(retroPath), 'retrospective.md must be installed');
+    const retro = fs.readFileSync(retroPath, 'utf8');
+    assert.ok(retro.includes('Stage 9'), 'retrospective.md must describe Stage 9');
+    assert.ok(retro.includes('lessons-learned.md'), 'retrospective.md must reference lessons-learned.md');
+  });
+
+  it('copies /retrospective command into .claude/commands/', () => {
+    run(target);
+    const cmdPath = path.join(target, '.claude', 'commands', 'retrospective.md');
+    assert.ok(fs.existsSync(cmdPath), '/retrospective command must be installed');
+    const cmd = fs.readFileSync(cmdPath, 'utf8');
+    assert.ok(cmd.includes('Stage 9'), '/retrospective must reference Stage 9');
+  });
+
+  it('/reset command preserves pipeline/lessons-learned.md', () => {
+    run(target);
+    const resetPath = path.join(target, '.claude', 'commands', 'reset.md');
+    assert.ok(fs.existsSync(resetPath));
+    const reset = fs.readFileSync(resetPath, 'utf8');
+    assert.ok(reset.includes('lessons-learned.md'), '/reset must explicitly preserve lessons-learned.md');
+  });
+
+  it('Stage 5 defines a READ-ONLY reviewer rule and each dev agent cites it', () => {
+    run(target);
+    const pipelinePath = path.join(target, '.claude', 'rules', 'pipeline.md');
+    const pipeline = fs.readFileSync(pipelinePath, 'utf8');
+    assert.ok(pipeline.includes('READ-ONLY Reviewer Rule'), 'pipeline.md must define the READ-ONLY Reviewer Rule');
+    assert.ok(pipeline.includes('No fix-forward'), 'pipeline.md must forbid fix-forward patches');
+
+    const gatesPath = path.join(target, '.claude', 'rules', 'gates.md');
+    const gates = fs.readFileSync(gatesPath, 'utf8');
+    assert.ok(gates.includes('READ-ONLY Reviewer Rule'), 'gates.md must reference the reviewer rule in Stage 05 schema');
+
+    for (const agent of ['dev-backend', 'dev-frontend', 'dev-platform']) {
+      const agentPath = path.join(target, '.claude', 'agents', `${agent}.md`);
+      const body = fs.readFileSync(agentPath, 'utf8');
+      assert.ok(
+        body.includes('READ-ONLY') && body.includes('CHANGES REQUESTED'),
+        `${agent}.md must carry the READ-ONLY reviewer callout`,
+      );
+    }
+  });
+
   it('creates pipeline/ structure with gates, adr, code-review', () => {
     run(target);
     assert.ok(fs.existsSync(path.join(target, 'pipeline')));

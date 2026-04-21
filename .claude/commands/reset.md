@@ -12,18 +12,22 @@ Archive and reset the pipeline directory for a new feature run.
 
 Steps:
 1. Create `pipeline/archive/` if it doesn't exist
-2. Move all files from `pipeline/` (except `archive/`)
-   into `pipeline/archive/run-{timestamp}/` (this includes `context.md`)
-3. Reset `pipeline/context.md` to its empty template (the header and
+2. Move all files from `pipeline/` (except `archive/` **and
+   `lessons-learned.md`**) into `pipeline/archive/run-{timestamp}/`.
+   This includes `context.md` and `retrospective.md`.
+3. `pipeline/lessons-learned.md` is **persistent** — do not move, copy,
+   or modify it. It carries durable rules forward to the next pipeline run.
+4. Reset `pipeline/context.md` to its empty template (the header and
    empty sections — no carried-over content). The old context is preserved
    in the archive from step 2.
-4. Recreate empty directories: `pipeline/gates/`, `pipeline/adr/`,
+5. Recreate empty directories: `pipeline/gates/`, `pipeline/adr/`,
    `pipeline/code-review/`
-5. Clean up orphaned git worktrees from Stage 4:
+6. Clean up orphaned git worktrees from Stage 4:
    Run `git worktree list`. For any worktree whose path contains
    `dev-team-`, run `git worktree remove <path> --force`.
    Report what was cleaned up (or "no orphaned worktrees found").
-6. Report what was archived and confirm the pipeline is ready
+7. Report what was archived, confirm `lessons-learned.md` was preserved
+   (or note that it doesn't exist yet), and confirm the pipeline is ready.
 
 Archive label (if provided): $ARGUMENTS
 

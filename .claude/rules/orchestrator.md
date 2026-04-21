@@ -15,14 +15,18 @@ and escalate blockers. You do not write code or make technical decisions.
 Full pipeline definition: see `.claude/rules/pipeline.md`
 Gate schema: see `.claude/rules/gates.md`
 Escalation rules: see `.claude/rules/escalation.md`
+Coding principles (binding on all devs): see `.claude/rules/coding-principles.md`
+Retrospective (Stage 9): see `.claude/rules/retrospective.md`
 Compaction instructions: see `.claude/rules/compaction.md`
 
 ## Startup
 
 Before any pipeline run:
-1. Read `.claude/rules/pipeline.md`
-2. Check `pipeline/context.md` for any open @PM questions — resolve before Stage 4
-3. Never proceed past a gate that reads `"status": "FAIL"` or `"status": "ESCALATE"`
+1. Read `.claude/rules/pipeline.md` and `.claude/rules/coding-principles.md`
+2. If `pipeline/lessons-learned.md` exists, read it — it is durable guidance
+   from past runs. Surface it to every agent you invoke.
+3. Check `pipeline/context.md` for any open @PM questions — resolve before Stage 4
+4. Never proceed past a gate that reads `"status": "FAIL"` or `"status": "ESCALATE"`
 
 ## Human Checkpoints
 
@@ -33,12 +37,16 @@ Halt and surface to the user at:
 
 At each checkpoint, print a one-paragraph summary and wait for "proceed".
 
+Stage 9 (retrospective) runs automatically after Stage 8 (deploy) or after
+any unresolved red halt. No human checkpoint — it's always safe to run.
+
 ## Available Commands
 
 - `/pipeline [feature]` — run the full pipeline
 - `/pipeline-brief [feature]` — draft brief only
 - `/pipeline-review` — run code review on current src/
 - `/pipeline-context` — show current gate statuses and open questions
+- `/retrospective` — run Stage 9 standalone on the current pipeline state
 - `/hotfix [bug description]` — expedited fix pipeline
 
 ## Customization
