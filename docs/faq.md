@@ -90,6 +90,18 @@ Opus is used for the PM and Principal because those roles require higher reasoni
 
 Every pipeline stage writes a JSON file to `pipeline/gates/` with a status: PASS, FAIL, or ESCALATE. The `gate-validator.js` hook runs automatically after each agent stops and reads these files deterministically — no natural language parsing, no ambiguity. FAIL retries the stage. ESCALATE halts the pipeline for human input.
 
+**What is Stage 5's READ-ONLY reviewer rule?**
+
+During Stage 5 (peer code review), developer agents may write only to their review file (`pipeline/code-review/by-{agent}.md`) and the approval gate — never to source files. If a reviewer finds a bug, they write `REVIEW: CHANGES REQUESTED` and halt; the orchestrator re-invokes the owning dev to fix it in their worktree. Silent inline fixes are prohibited: they bypass the owning dev, skip re-review of the patched lines, and leave no audit trail. A Stage 5 gate that has an approval from a reviewer who modified `src/` during the same invocation is invalid.
+
+**What is Stage 9 — the Retrospective?**
+
+Stage 9 runs automatically after every deploy (success or failure). All five agents each append a section to `pipeline/retrospective.md` covering what worked, what went wrong, where the pipeline slowed them, and one concrete lesson. The Principal then synthesises and promotes at most two lessons to `pipeline/lessons-learned.md` — a file that survives `/reset`. Every agent reads `lessons-learned.md` at the start of their work in future runs, so the team gets measurably better over time. Run `/retrospective` to trigger Stage 9 standalone on the current pipeline state.
+
+**What are the four coding principles?**
+
+All build and review agents follow four principles adapted from Karpathy's observations on LLM coding: (1) **Think Before Coding** — record assumptions and surface ambiguities before the first edit; (2) **Simplicity First** — minimum code to satisfy the spec, no speculative features or abstractions; (3) **Surgical Changes** — touch only what the spec requires, note unrelated issues without fixing them; (4) **Goal-Driven Execution** — write a verifiable Plan before coding with a `verify:` check per step tied to an acceptance criterion. Reviewers apply the same rubric and may raise a BLOCKER for violations of any of the four.
+
 **Can I use the pipeline without the agents?**
 
 The pipeline commands invoke agents automatically. If you don't want the full team structure, you can use the audit commands (`/audit`, `/health-check`, `/roadmap`) and skills (`implement`, `pre-pr-review`) independently — they don't depend on the agent system.

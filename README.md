@@ -3,7 +3,8 @@
 A full simulated software development team running inside Claude Code.
 Includes a PM, Principal Engineer, and three specialist developers with
 peer code review, human checkpoints, deterministic gate validation,
-a hotfix path, codebase auditing, and a roadmap workflow.
+a hotfix path, codebase auditing, a roadmap workflow, and a persistent
+retrospective that promotes lessons into future runs.
 
 New here? Start with [**docs/concepts.md**](docs/concepts.md) for
 one-sentence definitions of agent, command, skill, rule, and hook.
@@ -53,6 +54,7 @@ claude
 | Check monthly codebase health | `/health-check` |
 | See improvement roadmap progress | `/roadmap` |
 | See pipeline status | `/status` |
+| Run a retrospective on a completed run | `/retrospective` |
 | Resolve a technical disagreement | `/principal-ruling` |
 | Record an architecture decision | `/adr` |
 
@@ -81,7 +83,9 @@ The pipeline pauses three times for your review:
 | **B** | 2 — Design | Principal's spec and architecture decisions |
 | **C** | 6 — Tests | Test results vs acceptance criteria before deploy |
 
-Type `proceed` to advance.
+Type `proceed` to advance. After Stage 8 (Deploy), Stage 9 (Retrospective)
+runs automatically — no checkpoint needed. Lessons promoted to
+`pipeline/lessons-learned.md` survive `/reset` and influence every future run.
 
 ---
 
@@ -162,7 +166,8 @@ your-project/
 │   │   ├── pipeline.md                # /pipeline — full feature build
 │   │   ├── pipeline-brief.md          # /pipeline-brief — draft brief only
 │   │   ├── pipeline-review.md         # /pipeline-review — Stage 5 re-run
-│   │   ├── pipeline-context.md         # /pipeline-context — compact context dump
+│   │   ├── pipeline-context.md        # /pipeline-context — compact context dump
+│   │   ├── retrospective.md           # /retrospective — run Stage 9 standalone
 │   │   ├── status.md                  # /status — pipeline dashboard
 │   │   ├── hotfix.md                  # /hotfix — urgent production fix
 │   │   ├── audit.md                   # /audit — full codebase audit
@@ -180,9 +185,11 @@ your-project/
 │   │   ├── audit-phases.md            # Detailed audit phase definitions
 │   │   └── audit-extensions-example.md
 │   ├── rules/
-│   │   ├── pipeline.md                # Stage-by-stage definition
+│   │   ├── pipeline.md                # Stage-by-stage definition (9 stages)
 │   │   ├── gates.md                   # Gate JSON schema
 │   │   ├── escalation.md              # Escalation rules
+│   │   ├── coding-principles.md       # Four dev principles (binding on all agents)
+│   │   ├── retrospective.md           # Stage 9 protocol and lessons-learned format
 │   │   └── compaction.md              # Context compaction instructions
 │   ├── skills/
 │   │   ├── implement/SKILL.md         # Plan/execute/verify for focused changes
@@ -194,6 +201,7 @@ your-project/
 │   └── settings.json
 ├── pipeline/                          # Created by bootstrap, populated by /pipeline
 │   ├── context.md
+│   ├── lessons-learned.md             # Persistent across /reset — promoted lessons
 │   ├── gates/
 │   ├── adr/
 │   └── ...

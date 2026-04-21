@@ -12,9 +12,9 @@ is a human-readable summary and a compatibility shim for other tools.
 ## Team Overview
 
 This project uses a simulated software development team. All features go
-through a structured pipeline: Requirements → Design → Build → Review →
-Test → Deploy. Agents are not general-purpose assistants — each has a
-specific role, tool access, and domain ownership.
+through a structured 9-stage pipeline: Requirements → Design → Build →
+Review → Test → Deploy → Retrospective. Agents are not general-purpose
+assistants — each has a specific role, tool access, and domain ownership.
 
 ---
 
@@ -36,6 +36,7 @@ the PM flags it for the user.
 - Confirming scope fit after design is approved
 - Sign-off on test results before deploy
 - Writing post-deploy stakeholder summary
+- Stage 9a retrospective contribution
 
 ---
 
@@ -56,6 +57,7 @@ Records for every significant choice.
 - Chairing design review (after dev annotations)
 - Resolving escalated code review conflicts
 - Writing ADRs to `pipeline/adr/`
+- Stage 9a retrospective contribution and Stage 9b synthesis (chairs retro, promotes lessons to `pipeline/lessons-learned.md`)
 
 ---
 
@@ -67,13 +69,15 @@ Records for every significant choice.
 **Tools**: Read, Write, Edit, Grep, Glob, Bash  
 
 Implements backend contracts from the design spec. Participates in peer code
-review by reviewing the frontend and platform PRs. Writes and documents PRs
-to `pipeline/pr-backend.md`. Does not touch `src/frontend/` or `src/infra/`.
+review by reviewing the frontend and platform PRs (READ-ONLY — no source edits
+during review). Writes and documents PRs to `pipeline/pr-backend.md`. Does not
+touch `src/frontend/` or `src/infra/`.
 
 **Invoked for**:
 - Building backend in Stage 4 (parallel with other devs)
 - Reviewing `pipeline/pr-frontend.md` and `pipeline/pr-platform.md` in Stage 5
 - Fixing failing backend tests assigned by the platform dev
+- Stage 9a retrospective contribution
 
 ---
 
@@ -85,13 +89,15 @@ to `pipeline/pr-backend.md`. Does not touch `src/frontend/` or `src/infra/`.
 **Tools**: Read, Write, Edit, Grep, Glob, Bash  
 
 Implements UI and client logic from the design spec. Participates in peer code
-review by reviewing the backend and platform PRs. Does not touch `src/backend/`
-or `src/infra/`. Flags UX deviations to the PM rather than silently resolving them.
+review by reviewing the backend and platform PRs (READ-ONLY — no source edits
+during review). Does not touch `src/backend/` or `src/infra/`. Flags UX
+deviations to the PM rather than silently resolving them.
 
 **Invoked for**:
 - Building frontend in Stage 4 (parallel with other devs)
 - Reviewing `pipeline/pr-backend.md` and `pipeline/pr-platform.md` in Stage 5
 - Fixing failing frontend tests assigned by the platform dev
+- Stage 9a retrospective contribution
 
 ---
 
@@ -105,7 +111,8 @@ or `src/infra/`. Flags UX deviations to the PM rather than silently resolving th
 Owns the test suite, CI pipeline, and deployment. Writes and runs tests for
 every acceptance criterion. Identifies which dev owns a failing test and
 assigns the fix. Executes deployment only after PM sign-off is confirmed.
-Participates in peer code review by reviewing the backend and frontend PRs.
+Participates in peer code review by reviewing the backend and frontend PRs
+(READ-ONLY — no source edits during review).
 
 **Invoked for**:
 - Setting up infra/CI in Stage 4 (parallel with other devs)
@@ -113,6 +120,7 @@ Participates in peer code review by reviewing the backend and frontend PRs.
 - Running the full test suite in Stage 6
 - Executing deployment in Stage 8 (requires PM sign-off gate)
 - Running post-deploy smoke tests
+- Stage 9a retrospective contribution
 
 ---
 
@@ -122,18 +130,19 @@ Participates in peer code review by reviewing the backend and frontend PRs.
 
 | Command | What it does |
 |---|---|
-| `/pipeline <feature>` | Full pipeline end-to-end |
+| `/pipeline <feature>` | Full 9-stage pipeline end-to-end |
 | `/pipeline-brief <feature>` | Draft brief only (Stage 1) |
 | `/design <feature>` | Requirements + design only (Stages 1–2) |
 | `/pipeline-review` | Re-run peer code review |
 | `/pipeline-context` | Show current gate states and open questions |
+| `/retrospective` | Run Stage 9 standalone on the current pipeline state |
 | `/stage <name>` | Run one stage explicitly |
 | `/resume <stage-n>` | Resume from a specific stage |
 | `/hotfix <bug>` | Expedited fix (skips design) |
 | `/ask-pm` | PM answers open questions |
 | `/principal-ruling <question>` | Principal makes a binding ruling |
 | `/adr <title>` | Create an Architecture Decision Record |
-| `/reset` | Archive current run, start fresh |
+| `/reset` | Archive current run, start fresh (preserves `lessons-learned.md`) |
 | `/status` | Full pipeline status dashboard |
 
 ### Audit & Improvement Commands

@@ -19,11 +19,17 @@ A typical `/pipeline` run touches all five:
 1. The user types **`/pipeline add login`** — a **command**.
 2. The command's markdown file tells the orchestrator to read the
    **rules** in `.claude/rules/pipeline.md` and follow the stage order.
+   The orchestrator also reads `pipeline/lessons-learned.md` (if it exists)
+   — durable lessons promoted from past retrospectives that shape every stage.
 3. Stage 1 spawns the **PM agent**. The PM's frontmatter points it at the
    `code-conventions` **skill** to align on terminology.
 4. When the PM agent stops, Claude Code fires the configured **hook**
    (`gate-validator.js`) which reads the newest gate file and exits
    non-zero if it's malformed or FAIL — halting the pipeline.
+5. After Stage 8 (Deploy), Stage 9 (Retrospective) runs automatically:
+   all five agents contribute lessons to `pipeline/retrospective.md`,
+   and the Principal promotes up to two to `pipeline/lessons-learned.md`
+   so the next run starts smarter.
 
 ## Rules of thumb
 

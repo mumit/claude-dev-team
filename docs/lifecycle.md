@@ -134,13 +134,15 @@ You can focus the review on a specific area: `/review security`, `/review perfor
 
 ## Building New Features
 
-### /pipeline — Feature Build in 8 Stages
+### /pipeline — Feature Build in 9 Stages
 
-The pipeline orchestrates a full feature build through eight stages, with human checkpoints at two points.
+The pipeline orchestrates a full feature build through nine stages, with human checkpoints at three points.
 
 Stage 1 (Brief) is handled by the PM agent, which writes requirements and acceptance criteria. Stage 2 (Design) is handled by the Principal agent, which drafts the design spec and architecture decision records. Human Checkpoint A pauses for you to review the brief and design before any code is written.
 
-Stage 4 (Build) runs three developer agents in parallel — Backend, Frontend, and Platform — each scoped to their own directory. Stage 5 (Review) has each dev review the other two agents' work. Stage 6 (Test) has the Platform dev run the full test suite. Human Checkpoint B (Sign-off) pauses for PM and human approval of the test results. Stage 8 (Deploy) executes the deployment.
+Stage 4 (Build) runs three developer agents in parallel — Backend, Frontend, and Platform — each scoped to their own directory. Before writing a single line of code, each agent records its plan and assumptions. Stage 5 (Review) has each dev review the other two agents' work. **Reviewers are READ-ONLY during Stage 5 — they may not edit source files.** If a reviewer finds a bug, they write `REVIEW: CHANGES REQUESTED` and the owning dev fixes it separately. Stage 6 (Test) has the Platform dev run the full test suite. Human Checkpoint C pauses for PM and human approval of the test results before deploy. Stage 8 (Deploy) executes the deployment.
+
+Stage 9 (Retrospective) runs automatically after deploy (pass or fail). All five agents contribute a section to `pipeline/retrospective.md`, then the Principal synthesises and promotes up to two lessons to `pipeline/lessons-learned.md`. This file survives `/reset` and is read at the start of every future run — closing the learning loop across features.
 
 Every stage writes a JSON gate file to `pipeline/gates/` with a status of PASS, FAIL, or ESCALATE. The `gate-validator.js` hook reads these files deterministically after each agent stops — no natural language parsing, no ambiguity.
 
@@ -148,15 +150,15 @@ Every stage writes a JSON gate file to `pipeline/gates/` with a status of PASS, 
 
 | Role | Model | Domain | Boundaries |
 |---|---|---|---|
-| PM | Opus | Requirements, acceptance, sign-off | pipeline/ only — no code access |
-| Principal | Opus | Architecture, design review, ADRs | Read + Bash (read-only) |
-| Backend | Sonnet | APIs, services, data layer | src/backend/ only |
-| Frontend | Sonnet | UI components, client logic | src/frontend/ only |
-| Platform | Sonnet | Tests, CI/CD, deployment | src/infra/ only |
+| PM | Opus | Requirements, acceptance, sign-off, retro contribution | pipeline/ only — no code access |
+| Principal | Opus | Architecture, design review, ADRs, retro synthesis | Read + Bash (read-only) |
+| Backend | Sonnet | APIs, services, data layer | src/backend/ only; READ-ONLY during Stage 5 review |
+| Frontend | Sonnet | UI components, client logic | src/frontend/ only; READ-ONLY during Stage 5 review |
+| Platform | Sonnet | Tests, CI/CD, deployment | src/infra/ only; READ-ONLY during Stage 5 review |
 
 Opus is used for PM and Principal because those roles require higher reasoning — writing requirements, making architectural decisions, resolving conflicts. Sonnet is used for the developer roles because they're doing focused implementation work where speed matters more.
 
-Role separation prevents scope creep. Devs can't touch each other's code. The PM can't make technical decisions.
+Role separation prevents scope creep. Devs can't touch each other's code. The PM can't make technical decisions. During Stage 5 peer review, developer agents are READ-ONLY with respect to source files — they write only to their review file and the approval gate. Silent inline fixes bypass the owning dev and break the audit trail.
 
 ---
 
@@ -169,6 +171,10 @@ Claude is powerful but scoped. Here's the boundary.
 **Requires your approval:** proceeding past any checkpoint, committing or pushing code, approving the implementation plan, accepting the roadmap priorities, deploying to any environment, and resolving escalated decisions.
 
 Every finding includes a confidence rating. The human checkpoints exist specifically for you to review, correct, or override Claude's work. The `implement` skill stops if tests fail. The pipeline halts on ESCALATE gates. Nothing irreversible happens without a human in the loop.
+
+**Coding principles (applied by all agents during every build):** four behavioural rules adapted from Karpathy's LLM coding observations — Think Before Coding (record assumptions before the first edit), Simplicity First (minimum code that satisfies the spec, no speculative features), Surgical Changes (touch only what the spec requires), and Goal-Driven Execution (write a verifiable Plan before coding, loop until each criterion is checked off). Reviewers apply the same rubric: any BLOCKER finding must trace to one of the four principles.
+
+**Persistent learning:** after every deploy, Stage 9 (Retrospective) runs automatically. The Principal promotes at most two lessons per run to `pipeline/lessons-learned.md` — a file that survives `/reset` and is read by every agent at the start of every future run. Lessons that have been reinforced five times without a related defect are retired. The file grows only when something genuinely new is learned.
 
 ---
 
