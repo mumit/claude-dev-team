@@ -36,18 +36,39 @@ called out per release below. Full upgrade path: `docs/migration/v1-to-v2.md`.
 - `docs/tracks.md` — new; reference for the four tracks and how routing
   picks between them.
 
-### Not yet in this release
+### Added — `v2.1.0` (in progress — gate-validator hardening)
+
+- **Bypassed-escalation detection.** The validator now sweeps all gate
+  files and halts the pipeline (exit 3) when any gate has
+  `status: ESCALATE` but is older than another gate. A newer gate after
+  an unresolved escalation indicates the pipeline was bypassed without
+  resolving the decision.
+- **Retry-integrity enforcement.** Gates with `retry_number >= 1` must
+  carry a non-empty `this_attempt_differs_by` string. Missing or empty
+  values cause exit 1. The rule was documented in `gates.md` since v1
+  but was not enforced in code until now.
+- **Track-field advisory.** Gates are now expected to carry a `"track"`
+  field (`full` / `quick` / `config-only` / `dep-update` / `hotfix`).
+  Missing or unrecognised values produce a non-blocking advisory so
+  legacy gates from pre-v2.0 runs keep working during migration.
+- **Lessons-learned format validation.** The validator scans
+  `pipeline/lessons-learned.md` for malformed `**Reinforced:**` lines
+  and reports line numbers as advisories. Only two forms are valid:
+  `**Reinforced:** 0` and `**Reinforced:** N (last: YYYY-MM-DD)`.
+- 12 new tests in `tests/gate-validator.test.js` cover all of the above
+  (116 tests total; up from 104).
+
+### Still pending in `v2.x`
 
 The following planned items ship in later `v2.x` releases, as they break
 orthogonal things and benefit from staged rollout:
 
-- `v2.1` — Gate-validator hardening, approval integrity hook, src-edit
-  detector for Stage 5 reviewers.
 - `v2.2` — Expanded brief template (rollback, FF, migration, observability,
   SLO, cost). Expanded design-spec template. Stage 7 folded into Stage 6
   when every acceptance criterion maps 1:1 to a passing test.
 - `v2.3` — Split `dev-qa` from `dev-platform`. Security Engineer agent
   with veto. Automated pre-review gate (Stage 4.5) for lint + SCA.
+  Approval-derivation hook (parse `REVIEW: APPROVED` from review files).
 - `v2.4` — Deployment-adapter seam (`.claude/adapters/{docker-compose,k8s,
   terraform}/`). Runbook requirement on Stage 8.
 - `v2.5` — Budget gate, cross-run meta-retro, lesson auto age-out, positive
