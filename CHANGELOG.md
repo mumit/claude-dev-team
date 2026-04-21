@@ -96,15 +96,60 @@ called out per release below. Full upgrade path: `docs/migration/v1-to-v2.md`.
 - Stage 1 gate gains a new `"required_sections_complete"` field.
   Parsers with strict schemas should accept it.
 
+### Added — `v2.3.0` (in progress — agent split + security + pre-review)
+
+- **`dev-qa` agent (new).** Split from `dev-platform`. Owns test
+  authoring (`src/tests/`) and Stage 6 test execution. Authors the 1:1
+  criterion-to-test mapping that drives the Stage 7 auto-fold from
+  v2.2. `dev-platform` retains CI, infra, deploy, and the automated
+  pre-review gate.
+- **`security-engineer` agent (new).** Promoted from what was formerly
+  the `security-checklist` skill (optional, loadable). Now an agent
+  with veto power on Stage 4.5b when the triggering heuristic fires.
+  Triggers: auth/crypto/PII/payments paths, dependency changes,
+  Dockerfile / IaC changes, new env vars. A `veto: true` gate halts
+  the pipeline; peer-review approvals cannot override it.
+- **Stage 4.5 pre-review checks (new).** Two sub-gates between Stage 4
+  (build) and Stage 5 (peer review):
+  - **4.5a** — `dev-platform` runs lint + type-check + SCA + license
+    allowlist. Writes `pipeline/gates/stage-04-pre-review.json`.
+    Reviewers don't spend tokens on what the toolchain already flags.
+  - **4.5b** — `security-engineer` review when the heuristic fires.
+    Writes `pipeline/gates/stage-04-security.json` with
+    `security_approved` and `veto` fields.
+- **Stage 6 criterion-to-test mapping.** The Stage 6 gate now carries
+  `"criterion_to_test_mapping_is_one_to_one"` — dev-qa sets it, and it
+  gates the Stage 7 auto-fold from v2.2.
+
+### Breaking changes — `v2.3.0`
+
+- **`dev-platform` agent narrowed.** The test-authoring and Stage 6
+  test-run sections were removed. Projects that invoked `dev-platform`
+  directly for test tasks (via `/stage 6` or similar) must now invoke
+  `dev-qa` instead. The `/pipeline` orchestrator handles routing
+  automatically — no action needed unless you scripted a direct invoke.
+- **`src/tests/` ownership moved.** `dev-qa` is now the primary author.
+  Permissions under `.claude/settings.json` still allow `Write(src/**)`
+  globally, but the agent definitions enforce the split.
+- **New gate files.** `pipeline/gates/stage-04-pre-review.json` is
+  required on every run. `pipeline/gates/stage-04-security.json` is
+  required only when the heuristic fires. Downstream tooling that
+  enumerates gates should accept both.
+- **New required Stage 6 field.** `criterion_to_test_mapping_is_one_to_one`
+  on `stage-06.json`. Older tooling that reads Stage 6 gates should
+  accept the new field.
+- **`security-checklist` skill now supplementary.** It's still loaded by
+  `security-engineer` as the review rubric, but other agents should
+  not lean on it as a proxy for security review.
+
 ### Still pending in `v2.x`
 
 The following planned items ship in later `v2.x` releases, as they break
 orthogonal things and benefit from staged rollout:
 
-- `v2.3` — Split `dev-qa` from `dev-platform`. Security Engineer agent
-  with veto. Automated pre-review gate (Stage 4.5) for lint + SCA.
-  Approval-derivation hook (parse `REVIEW: APPROVED` from review files).
-  Scoped peer-review matrix (1+1 for area-contained changes).
+- `v2.3.1` — Approval-derivation hook (parse `REVIEW: APPROVED` from
+  review files and append to gate). Scoped peer-review matrix (1+1 for
+  area-contained changes). Shipped as a focused follow-up PR.
 - `v2.4` — Deployment-adapter seam (`.claude/adapters/{docker-compose,k8s,
   terraform}/`). Runbook requirement on Stage 8.
 - `v2.5` — Budget gate, cross-run meta-retro, lesson auto age-out, positive

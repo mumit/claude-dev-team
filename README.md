@@ -168,7 +168,9 @@ your-project/
 │   │   ├── principal.md               # Principal — architecture, reviews
 │   │   ├── dev-backend.md             # Backend dev — APIs, services
 │   │   ├── dev-frontend.md            # Frontend dev — UI, client
-│   │   └── dev-platform.md            # Platform dev — tests, CI, deploy
+│   │   ├── dev-platform.md            # Platform dev — CI, infra, deploy, pre-review
+│   │   ├── dev-qa.md                  # QA dev — test authoring + Stage 6 (v2.3+)
+│   │   └── security-engineer.md       # Security — threat model + veto (v2.3+)
 │   ├── commands/
 │   │   ├── pipeline.md                # /pipeline — full feature build
 │   │   ├── pipeline-brief.md          # /pipeline-brief — draft brief only
@@ -225,7 +227,9 @@ your-project/
 | Principal | opus | Judgment: architecture, rulings |
 | dev-backend | sonnet | Execution: build, review |
 | dev-frontend | sonnet | Execution: build, review |
-| dev-platform | sonnet | Execution: test, deploy, review |
+| dev-platform | sonnet | Execution: infra, deploy, review, pre-review checks |
+| dev-qa | sonnet | Execution: test authoring + Stage 6 run *(v2.3+)* |
+| security-engineer | opus | Judgment: threat modelling, veto on security-relevant diffs *(v2.3+)* |
 
 ---
 

@@ -103,24 +103,71 @@ deviations to the PM rather than silently resolving them.
 
 ## dev-platform
 
-**Role**: Platform / QA Developer  
-**Domain**: `src/infra/` — CI/CD, infra config, tests, deployment  
+**Role**: Platform Developer  
+**Domain**: `src/infra/` — CI/CD, infra config, deployment  
 **Model**: Claude Sonnet  
 **Tools**: Read, Write, Edit, Grep, Glob, Bash  
 
-Owns the test suite, CI pipeline, and deployment. Writes and runs tests for
-every acceptance criterion. Identifies which dev owns a failing test and
-assigns the fix. Executes deployment only after PM sign-off is confirmed.
-Participates in peer code review by reviewing the backend and frontend PRs
-(READ-ONLY — no source edits during review).
+Owns `src/infra/`, the CI pipeline, and deployment. Runs the automated
+Stage 4.5a pre-review checks (lint, type-check, SCA, license). Executes
+deployment only after PM sign-off is confirmed. Participates in peer
+code review by reviewing the backend and frontend PRs (READ-ONLY — no
+source edits during review).
+
+Test authoring and the Stage 6 test run moved to `dev-qa` in v2.3.
+Security review moved to `security-engineer` in v2.3.
 
 **Invoked for**:
 - Setting up infra/CI in Stage 4 (parallel with other devs)
+- Running Stage 4.5a pre-review checks (lint + SCA + license)
 - Reviewing `pipeline/pr-backend.md` and `pipeline/pr-frontend.md` in Stage 5
-- Running the full test suite in Stage 6
 - Executing deployment in Stage 8 (requires PM sign-off gate)
 - Running post-deploy smoke tests
 - Stage 9a retrospective contribution
+
+---
+
+## dev-qa
+
+**Role**: QA Developer  
+**Domain**: `src/tests/` — test authoring and execution  
+**Model**: Claude Sonnet  
+**Tools**: Read, Write, Edit, Grep, Glob, Bash  
+**Added**: v2.3 (split from `dev-platform`)  
+
+Owns the test suite authorship and Stage 6 execution. Writes and runs
+tests for every acceptance criterion, maintaining the 1:1 criterion-to-
+test mapping that enables the Stage 7 auto-fold. Identifies which dev
+owns a failing test and assigns the fix via `"assigned_retry_to"`.
+Participates in peer code review focused on testability.
+
+**Invoked for**:
+- Test authoring in Stage 4 (parallel with devs writing production code)
+- Running the full test suite in Stage 6
+- Reviewing other devs' PRs in Stage 5 with focus on testability
+- Fixing failing tests when they are the owning agent
+- Stage 9a retrospective contribution
+
+---
+
+## security-engineer
+
+**Role**: Security Engineer  
+**Domain**: Security review of security-relevant diffs  
+**Model**: Claude Opus  
+**Tools**: Read, Write (pipeline/ only), Grep, Glob, Bash  
+**Added**: v2.3 (promoted from the `security-checklist` skill)  
+
+Invoked for Stage 4.5b security review when the triggering heuristic
+matches the diff (auth/crypto/PII/payments paths, dependency changes,
+Dockerfile / IaC changes, new env vars). Has veto power: a
+`veto: true` gate halts the pipeline regardless of peer-review
+approvals. Does NOT write or edit source.
+
+**Invoked for**:
+- Stage 4.5b security review when the heuristic fires
+- Stage 9a retrospective contribution (security lessons only — class-
+  of-issue observations, not per-finding)
 
 ---
 
