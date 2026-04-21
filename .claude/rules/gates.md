@@ -210,9 +210,24 @@ Informational gate — status is PASS unless synthesis itself failed.
   "severity": "green | yellow | red",
   "lessons_promoted": ["L007 — clarify notify channel in brief"],
   "lessons_retired": ["L002 — prefer offset pagination"],
-  "contributions_written": ["pm", "principal", "dev-backend", "dev-frontend", "dev-platform"]
+  "aged_out": ["L019 — avoid trailing slash in URLs"],
+  "patterns_harvested": 3,
+  "contributions_written": [
+    "pm", "principal",
+    "dev-backend", "dev-frontend", "dev-platform", "dev-qa"
+  ]
 }
 ```
+
+**v2.5+ fields**:
+- `aged_out` — rules retired via the age-out rule (not reinforced in
+  10 runs + current `Reinforced` is 0). Distinct from `lessons_retired`,
+  which is for rules explicitly proven wrong or internalised.
+- `patterns_harvested` — count of `PATTERN:` entries the Principal
+  pulled from Stage 5 review files during synthesis, before
+  selection for promotion.
+- `contributions_written` — dev-qa was added in v2.3;
+  security-engineer contributes when Stage 4.5b fired.
 
 ## Retry Protocol
 

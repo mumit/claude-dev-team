@@ -112,19 +112,31 @@ See `.claude/rules/retrospective.md` §Step 9b for the full protocol.
 
 1. Read all sections in `pipeline/retrospective.md` and the current
    `pipeline/lessons-learned.md`.
-2. Prepend a `## Synthesis` block to `pipeline/retrospective.md` with date,
+2. **Harvest PATTERN entries (v2.5+)** from `pipeline/code-review/by-*.md`.
+   Any `PATTERN:` line a reviewer wrote during Stage 5 is a candidate
+   for promotion. PATTERN entries compete with the agents' Step 9a
+   "one lesson" contributions for the 2-per-retro promotion cap.
+3. Prepend a `## Synthesis` block to `pipeline/retrospective.md` with date,
    feature title, severity (green/yellow/red per the rubric), top theme,
    and the promoted/retired lesson lists.
-3. Update `pipeline/lessons-learned.md`:
+4. Update `pipeline/lessons-learned.md`:
    - **Promote** at most 2 rules per retro. Force selection — a bloated
      lessons file is ignored. A rule is promotable only if concrete,
-     generalisable, and non-duplicate.
-   - **Retire** rules this run proved wrong, or rules reinforced ≥5 times
-     without a related defect (internalised — no longer need to be written).
+     generalisable, and non-duplicate. PATTERN-derived promotions use
+     positive phrasing ("Use X because …") instead of corrective
+     ("Don't do Y because …").
+   - **Retire** rules this run proved wrong, rules reinforced ≥5 times
+     without a related defect (internalised), or rules that have not
+     been reinforced in 10 runs AND their current `Reinforced` count
+     is 0 (**auto age-out, v2.5+**). The age-out rule clears rules
+     nobody has hit in long enough to matter.
    - **Reinforce** existing rules that came up again by bumping the
      Reinforced counter and updating the date.
-4. Write `pipeline/gates/stage-09.json` — `"status": "PASS"` (informational)
-   with `"lessons_promoted"` and `"lessons_retired"` arrays.
+5. Write `pipeline/gates/stage-09.json` — `"status": "PASS"` (informational)
+   with `"lessons_promoted"` and `"lessons_retired"` arrays, plus
+   (v2.5+) `"patterns_harvested"` count and `"aged_out"` array for
+   rules that retired via the age-out rule rather than via explicit
+   retirement.
 
 Blame is out of scope. Frame every lesson around the system (the brief,
 the spec, the principle), not the agent.

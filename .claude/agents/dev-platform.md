@@ -151,6 +151,9 @@ missing/weak Plan with unverifiable steps (§4). See
 `.claude/rules/coding-principles.md`.
 
 Classify as BLOCKER / SUGGESTION / QUESTION inside each section.
+Use `PATTERN:` (v2.5+) to call out something done especially well
+that the team should adopt as default — the Principal may promote
+recurring PATTERN entries during Stage 9 synthesis.
 
 ## On a Deploy Task (v2.4+ — adapter-driven)
 

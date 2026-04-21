@@ -1,6 +1,47 @@
 # Pipeline Rules
 
-## Stage 0 — Routing (orchestrator, pre-stage)
+## Stage 0 — Routing + budget (orchestrator, pre-stage)
+
+### Budget gate (v2.5+, opt-in)
+
+Before Stage 1, the orchestrator initialises budget tracking if
+`.claude/config.yml` has `budget.enabled: true`. Budget tracking
+writes `pipeline/budget.md` at run start with zero counters and
+updates it at every stage boundary:
+
+```markdown
+# Budget
+
+Started: <ISO>
+Tokens max: 500000
+Wall-clock max: 90 min
+
+## Running totals
+| Stage | Tokens | Elapsed (min) |
+|-------|--------|---------------|
+| 1     | 12000  | 3.2           |
+| 2     | 45000  | 8.7           |
+| ...   | ...    | ...           |
+```
+
+After each stage gate passes, the orchestrator checks the running
+totals against the configured maximums. On exceed:
+
+- `on_exceed: escalate` — write `pipeline/gates/stage-budget.json`
+  with `status: ESCALATE`, `escalation_reason: "Budget exceeded
+  — <tokens | wall-clock>"`, and `decision_needed: "Continue
+  (override budget), or halt and inspect?"`. The orchestrator halts.
+- `on_exceed: warn` — log the breach, continue the pipeline. Useful
+  for calibration runs where the team is still tuning limits.
+
+Token counts are best-effort — the orchestrator sums reported usage
+where Claude Code surfaces it, otherwise estimates from character
+counts. This is a guardrail, not a cryptographic limit.
+
+When `budget.enabled: false` (default), no tracking happens. This is
+what projects that don't want the overhead should use.
+
+### Track routing
 
 Before Stage 1, the orchestrator must decide which track to run. Four tracks
 exist and they share gates, agents, and artefacts where they overlap, but
@@ -39,6 +80,36 @@ gate in a lighter track differs from the full-track definition (for
 example, Stage 5 needing only one approval in `/quick`), the track file
 overrides the rule here — the track file is authoritative for its own
 track.
+
+### Async-friendly checkpoints (v2.5+, opt-in)
+
+By default, the pipeline halts at Checkpoints A, B, and C waiting for
+a human `proceed`. Teams can pre-approve a checkpoint when a
+precondition holds, configured in `.claude/config.yml`:
+
+```yaml
+checkpoints:
+  c:
+    auto_pass_when: all_criteria_passed
+```
+
+Supported conditions:
+
+- `null` / absent — always wait for human (default; current behaviour)
+- `no_warnings` — auto-pass if the stage gate has zero warnings
+- `all_criteria_passed` — auto-pass if `stage-06.json` has
+  `all_acceptance_criteria_met: true` (Checkpoint C only)
+
+Auto-pass writes a record to `pipeline/context.md` under `## User
+Decisions` as:
+
+```
+<ISO> — Checkpoint <X> auto-passed via config (<condition>)
+```
+
+Never auto-pass security-sensitive work. The safety stoplist above
+and the Stage 4.5b security-engineer veto remain the hard guards —
+auto-pass at checkpoints does not override them.
 
 ---
 

@@ -334,11 +334,94 @@ v2.3 hardcoded docker-compose path. The Stage 8 gate reverts to the
 v2.3 shape automatically (no migration of existing gate files
 needed).
 
-## `v2.5.0` — Learning loop and budget (forthcoming)
+## `v2.5.0` — Learning loop + budget
 
-*Ships in a follow-up release.* Adds opt-in token/wall-clock budget gate,
-cross-run meta-retro, lesson auto age-out, and a positive-signal
-`PATTERN` review tag. All opt-in, non-breaking.
+### What breaks
+
+- **`lessons-learned.md` auto age-out.** Rules that haven't been
+  reinforced in 10 runs AND whose current `Reinforced` count is 0
+  will retire automatically during the next Step 9b synthesis run.
+  Projects with long-lived lessons files should expect the first few
+  v2.5 retros to shrink the file. If a rule you care about is
+  slated for age-out but you want to keep it, reinforce it manually
+  by bumping `**Reinforced:** 1 (last: <today>)` before the next
+  retro.
+- **Stage 9 gate schema extended.** New `aged_out` array and
+  `patterns_harvested` count on `stage-09.json`. `contributions_written`
+  now includes `dev-qa` (and `security-engineer` when Stage 4.5b
+  fired). Tooling that hardcoded a five-agent list should update.
+
+### What doesn't break
+
+- Budget gate is **off by default**. Projects that don't opt in see
+  no change in pipeline behaviour.
+- Async-friendly checkpoints are **off by default per checkpoint**.
+  The standard halt-and-wait pattern stays unchanged.
+- PATTERN is additive to the reviewer file format from v2.3.1.
+  Reviewers who don't write PATTERN lines produce the same gate
+  outcome.
+- Prior retros, prior `lessons-learned.md` entries, prior gates all
+  remain readable.
+
+### Steps
+
+1. **Re-run bootstrap.** Agent prompt updates, rule-file updates, and
+   extended `.claude/config.yml` land. Existing `config.yml` is
+   preserved.
+2. **Decide on budget tracking.** If you want it, edit
+   `.claude/config.yml`:
+   ```yaml
+   budget:
+     enabled: true
+     tokens_max: 500000
+     wall_clock_max_minutes: 90
+     on_exceed: escalate
+   ```
+   Start with `on_exceed: warn` for a few runs to calibrate the
+   limits to your typical workload, then switch to `escalate`.
+3. **Decide on async checkpoints.** For teams that want to run
+   overnight or without a human at every checkpoint, enable one
+   auto-pass condition per checkpoint. Example:
+   ```yaml
+   checkpoints:
+     c:
+       auto_pass_when: all_criteria_passed
+   ```
+   Never auto-pass work that crosses the safety stoplist; the
+   stoplist and security-engineer veto remain authoritative.
+4. **Audit your `lessons-learned.md`.** Skim it once before the next
+   retro. Rules that are genuinely still useful but inactive should
+   get a manual reinforcement bump; rules you're ready to lose can
+   be left alone to age out.
+
+### Rollback
+
+All v2.5 additions are opt-in or additive:
+- Set `budget.enabled: false` (default)
+- Set all `checkpoints.*.auto_pass_when: null` (default)
+- Remove PATTERN lines from review files (reviewers just stop
+  writing them)
+- To disable auto age-out: revert `.claude/rules/retrospective.md`
+  and `.claude/agents/principal.md` to their v2.4 versions
+
+---
+
+## v2.x complete
+
+v2.5 is the final release in the v2.x line. The full v2 stack:
+
+1. v2.0 — tracks and routing
+2. v2.1 — gate-validator hardening
+3. v2.2 — brief/spec expansion + Stage 7 auto-fold
+4. v2.3 — dev-qa + security-engineer + Stage 4.5
+5. v2.3.1 — scoped review + approval-derivation hook
+6. v2.4 — deploy adapters + runbook
+7. v2.5 — budget + learning loop
+
+Beyond v2.5, future work likely includes: cross-run meta-retro,
+parallel-aware context compaction, adapter-specific runbook
+templates, and expanded security-engineer heuristics. No committed
+v3 schedule.
 
 ## Getting help
 

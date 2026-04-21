@@ -223,13 +223,68 @@ called out per release below. Full upgrade path: `docs/migration/v1-to-v2.md`.
 - Tooling that hardcoded `docker compose` commands based on reading
   Stage 8 gates should now branch on `adapter` first.
 
-### Still pending in `v2.x`
+### Added — `v2.5.0` (in progress — budget + learning loop)
 
-The following planned items ship in later `v2.x` releases, as they break
-orthogonal things and benefit from staged rollout:
+- **Budget gate (opt-in).** `.claude/config.yml` now has a `budget:`
+  block. When `enabled: true`, the orchestrator tracks token usage
+  and wall-clock time per run, writes `pipeline/budget.md`, and
+  checks the running totals at each stage boundary. On exceed, the
+  configured policy (`escalate` or `warn`) fires. Default off; this
+  is a guardrail for teams with cost discipline, not a required
+  feature.
+- **PATTERN positive review tag.** Reviewers can now flag things done
+  especially well using `PATTERN:` lines inside Stage 5 review
+  sections. The Principal harvests PATTERN entries during Step 9b
+  synthesis and can promote recurring ones into
+  `pipeline/lessons-learned.md` as positive rules. Competes with
+  the agents' "one lesson" contributions for the 2-per-retro
+  promotion cap.
+- **Lesson auto age-out.** Rules in `lessons-learned.md` that haven't
+  been reinforced in 10 runs AND whose current `Reinforced` count is
+  0 are retired automatically during Step 9b synthesis. The Stage 9
+  gate's new `aged_out` array distinguishes this from explicit
+  retirement (`lessons_retired`).
+- **Async-friendly checkpoints (opt-in per checkpoint).** New
+  `checkpoints.{a,b,c}.auto_pass_when` config in
+  `.claude/config.yml`. Supported conditions: `no_warnings`,
+  `all_criteria_passed` (Checkpoint C only). Default behaviour is
+  unchanged (wait for human). Never applies to security-sensitive
+  work — the safety stoplist and security-engineer veto remain
+  authoritative.
+- **Stage 9 gate schema extended.** New `aged_out` array,
+  `patterns_harvested` count, and `dev-qa` in
+  `contributions_written`.
 
-- `v2.5` — Budget gate, cross-run meta-retro, lesson auto age-out, positive
-  review channel (`PATTERN` tag), async-friendly checkpoints.
+### Breaking changes — `v2.5.0`
+
+- **Stage 9 gate schema extension.** New fields `aged_out`,
+  `patterns_harvested`. Parsers should accept them (additive).
+  `contributions_written` now includes `dev-qa`; tooling that
+  hardcoded the five-agent list must update.
+- **Lessons-learned auto age-out.** Projects with a long-lived
+  `lessons-learned.md` that contains rules nobody has touched in
+  many runs will see those rules disappear over the first few v2.5
+  synthesis runs. The retirement is recorded in retro synthesis
+  blocks so there's an audit trail.
+
+All v2.5 additions are opt-in or additive. Projects that leave
+`budget.enabled: false` and `checkpoints.*.auto_pass_when: null`
+will see no behavioural change from v2.4 beyond the age-out and
+PATTERN handling.
+
+---
+
+## v2.x release sequence (reference)
+
+| Release | Scope |
+|---|---|
+| v2.0 | Lightweight tracks (/quick, /config-only, /dep-update) + scope routing |
+| v2.1 | Gate-validator hardening (bypassed escalations, retry integrity, track advisory, lessons-learned format validation) |
+| v2.2 | Brief/spec template expansion (rollback, FF, migration, observability, SLO, cost) + Stage 7 auto-fold |
+| v2.3 | dev-qa agent split from dev-platform; security-engineer agent with Stage 4.5b veto; Stage 4.5a pre-review gate |
+| v2.3.1 | Scoped peer review + approval-derivation hook (closes self-approval hole) |
+| v2.4 | Deployment-adapter seam (.claude/adapters/) + runbook requirement at Stage 8 |
+| v2.5 | Budget gate + PATTERN review tag + lesson auto age-out + async-friendly checkpoints |
 
 ---
 

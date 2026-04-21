@@ -99,8 +99,11 @@ missing/weak Plan with unverifiable steps (§4). See
 `.claude/rules/coding-principles.md`.
 
 Classify as BLOCKER / SUGGESTION / QUESTION inside each section.
-Escalate architectural issues with `ESCALATE: [reason]` inside the
-relevant section.
+Use `PATTERN:` (v2.5+) to call out something done especially well
+that the team should adopt as default — the Principal may promote
+recurring PATTERN entries into `lessons-learned.md` during Stage 9
+synthesis. Escalate architectural issues with `ESCALATE: [reason]`
+inside the relevant section.
 
 ## On a Test Fix Task
 

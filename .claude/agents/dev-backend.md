@@ -118,6 +118,11 @@ Other issues classify as:
   - **BLOCKER**: must fix before merge
   - **SUGGESTION**: would improve the code, not required
   - **QUESTION**: need clarification before you can approve
+  - **PATTERN** (v2.5+): call out something done especially well
+    that the team should adopt as default. The Principal may promote
+    recurring PATTERN entries into `lessons-learned.md` during Stage
+    9 synthesis. One PATTERN line is usually enough per review —
+    quality over volume.
 
 If you find an architectural issue outside your authority, add an
 `ESCALATE:` line inside the relevant area section. The orchestrator

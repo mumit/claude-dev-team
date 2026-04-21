@@ -33,8 +33,9 @@ per-run retro is the raw material; lessons-learned is the refined output.
 ### Step 9a — Contribution pass (parallel)
 
 Invoke in parallel: `pm`, `principal`, `dev-backend`, `dev-frontend`,
-`dev-platform`. Each agent appends **its own section** to
-`pipeline/retrospective.md` using the anchor pattern:
+`dev-platform`, `dev-qa`. When the Stage 4.5b security gate fired,
+`security-engineer` also contributes. Each agent appends **its own
+section** to `pipeline/retrospective.md` using the anchor pattern:
 
 ```markdown
 ## <agent-name>
@@ -61,6 +62,34 @@ The "one lesson" is required — no opting out. If an agent genuinely has
 nothing new, they write `- (no new lesson this run; strongest existing rule
 reinforced: <quoted rule from lessons-learned.md>)`.
 
+### Positive-signal PATTERN tag (v2.5+)
+
+Reviewers can also flag things that went *especially well* during Stage
+5 using a `PATTERN:` line inside a review-file section:
+
+```markdown
+## Review of backend
+<comments>
+
+PATTERN: dependency injection lifecycle is explicit and testable —
+candidate for the team's default pattern
+
+REVIEW: APPROVED
+```
+
+The Principal collects PATTERN entries across reviews during Step 9b
+synthesis. PATTERN entries compete with lessons for promotion into
+`lessons-learned.md`. A PATTERN can promote when:
+- It names a concrete, repeatable practice (not a vibe — "good naming"
+  is not a pattern)
+- It generalises beyond this feature
+- Doesn't duplicate an existing rule
+
+Promoted PATTERN entries go under `lessons-learned.md` with the same
+schema as a regular lesson, but phrased as a positive rule ("Use
+constructor injection for service dependencies …") rather than a
+corrective one. The 2-per-retro promotion cap still applies.
+
 ### Step 9b — Synthesis (Principal chairs)
 
 Invoke: `principal` agent.  
@@ -79,8 +108,15 @@ Output:
    - **Promote** a new rule only if it's concrete, generalises beyond this
      feature, and doesn't duplicate an existing rule. Max **2 promotions per
      retro** — force selection, prevent bloat.
-   - **Retire** a rule if this run proved it wrong, or if it's been
-     reinforced ≥5 times without a related defect (it's internalised).
+   - **Retire** a rule if:
+     - This run proved it wrong
+     - It's been reinforced ≥5 times without a related defect
+       (internalised — no longer needs to be written)
+     - **Auto age-out (v2.5+):** it hasn't been reinforced in **10**
+       runs AND its current `Reinforced` counter is 0. Rules that
+       nobody has hit in 10 runs are noise. Before retiring on this
+       rule, confirm the principal has not recently opened an ADR
+       that cites it — if so, keep it one more cycle.
    - Each rule in `lessons-learned.md` uses this shape. The `**Reinforced:**`
      line MUST match the inspector parser contract — see `src/backend/app/parser.py`
      `_REINFORCED_INLINE_RE`. Two forms only: `**Reinforced:** 0` when never
