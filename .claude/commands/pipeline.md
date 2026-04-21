@@ -79,6 +79,22 @@ Follow the stage sequence in `.claude/rules/pipeline.md` exactly.
 After each stage, print one status line:
 `[Stage N — Name] ✅ PASS` or `[Stage N — Name] ❌ FAIL — reason`
 
+### Stage 7 auto-fold check (v2.2+)
+
+Before invoking the `pm` agent for Stage 7, check Stage 6's gate. If
+all of the following are true, skip the PM invocation and write Stage 7
+directly with `"auto_from_stage_06": true`:
+
+- `stage-06.json` has `"status": "PASS"` and `"all_acceptance_criteria_met": true`
+- The Stage 6 test report has a 1:1 mapping from each acceptance criterion
+  to at least one passing test (no criterion with zero tests; no test
+  covering multiple criteria with distinct verify conditions)
+- The user did not request manual sign-off
+- The track is not `/hotfix`
+
+Otherwise invoke the PM agent normally. See `.claude/rules/pipeline.md`
+Stage 7 for the detailed auto-fold contract.
+
 At each HUMAN CHECKPOINT (A, B, C):
 - Print a plain-English summary of what was produced
 - Write the checkpoint gate file

@@ -20,8 +20,25 @@ The orchestrator reads JSON, not prose. Gates are machine-readable.
 
 ### Stage 01 (PM brief)
 ```json
-{ "acceptance_criteria_count": 5, "out_of_scope_items": [] }
+{
+  "acceptance_criteria_count": 5,
+  "out_of_scope_items": [],
+  "required_sections_complete": true
+}
 ```
+
+`required_sections_complete` (v2.2+) must be `true` when the brief
+contains all sections required for its track. Required sections:
+
+- Every track: §1–§5 (Problem, Stories, Acceptance Criteria, Out of
+  Scope, Open Questions)
+- `full` and `hotfix`: also §6–§11 (Rollback, Feature Flag, Data
+  Migration, Observability, SLO, Cost)
+- `quick`, `config-only`, `dep-update`: §1–§5 plus either §6–§11 or a
+  single `## Risk notes` line when the change is trivial on all six
+  dimensions
+
+See `docs/brief-template.md` for the canonical shape.
 
 ### Stage 02 (Design)
 ```json
@@ -66,6 +83,24 @@ clean source tree.
 ```json
 { "pm_signoff": true, "delta_items": [] }
 ```
+
+Auto-fold from Stage 6 (v2.2+): when Stage 6 has `"all_acceptance_criteria_met":
+true` and a 1:1 criterion-to-test mapping, the orchestrator writes Stage
+7 directly with:
+
+```json
+{
+  "pm_signoff": true,
+  "auto_from_stage_06": true,
+  "delta_items": []
+}
+```
+
+The `auto_from_stage_06` flag is the discriminator. On this path, the
+`agent` field is `"orchestrator"` rather than `"pm"` — downstream
+tooling that filters gates by author should allow both values for
+stage-07. See `.claude/rules/pipeline.md` Stage 7 for the skip
+conditions.
 
 ### Stage 08 (Deploy)
 ```json

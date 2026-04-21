@@ -33,12 +33,22 @@ Read `pipeline/brief.md`. Produce `pipeline/design-spec.md` covering:
 3. **API contracts** — endpoints, request/response shapes, auth requirements
 4. **Component ownership** — which dev owns which area (backend/frontend/platform)
 5. **Non-functional requirements** — performance targets, security constraints, scalability
-6. **Open technical questions** — write as `QUESTION: [text] @PM` if customer input needed
+6. **Observability instrumentation** — which metrics, logs, and traces each
+   component emits, named thresholds for alerting, and where the feature's
+   health is visible post-deploy. Must cover at least every acceptance
+   criterion from `pipeline/brief.md` §9 "Observability requirements".
+   Name the metric type (counter/gauge/histogram), the log level, and
+   the span name. Where an SLO is named in the brief, reference the
+   specific SLI the instrumentation feeds.
+7. **Open technical questions** — write as `QUESTION: [text] @PM` if customer input needed
 
 End the file with `STATUS: DRAFT`.
 
 Before finalising: check `pipeline/context.md` for any prior rulings or
 `## User Decisions` entries that should inform this design.
+
+For the canonical template with worked examples, see
+`docs/design-spec-template.md`.
 
 ## On Chairing a Design Review
 

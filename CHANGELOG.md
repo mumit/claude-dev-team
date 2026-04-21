@@ -58,17 +58,53 @@ called out per release below. Full upgrade path: `docs/migration/v1-to-v2.md`.
 - 12 new tests in `tests/gate-validator.test.js` cover all of the above
   (116 tests total; up from 104).
 
+### Added — `v2.2.0` (in progress — brief/spec expansion + Stage 7 fold)
+
+- **Expanded brief template.** PM briefs now include six additional
+  required sections on the full track and `/hotfix`: Rollback plan,
+  Feature flag / rollout strategy, Data migration safety, Observability
+  requirements, SLO / error-budget impact, Cost impact. Each has a
+  default "None"-style answer for cases where the dimension is
+  genuinely empty, but the section must be present. Lighter tracks can
+  condense the six into a single `## Risk notes` line when every
+  dimension is trivial.
+- **Expanded design-spec template.** Principal specs now include a
+  required §6 "Observability instrumentation" section naming the
+  specific metric/log/trace primitive for each acceptance criterion in
+  the brief, and the SLI each feeds where an SLO is named.
+- **Stage 7 auto-fold.** When Stage 6 maps every acceptance criterion
+  1:1 to a passing test and sets `"all_acceptance_criteria_met":
+  true`, the orchestrator writes Stage 7 directly without invoking the
+  PM agent. Skipped for `/hotfix` (always requires manual sign-off),
+  for ambiguous test-to-criteria mappings, and when the user requests
+  a manual review. Flagged via `"auto_from_stage_06": true` on the
+  gate.
+- **Canonical templates.** New `docs/brief-template.md` and
+  `docs/design-spec-template.md` with full and condensed forms plus a
+  worked example.
+
+### Breaking changes — `v2.2.0`
+
+- Briefs written against the v1 or v2.0 template will fail the Stage 1
+  `required_sections_complete` check on the full track and `/hotfix`
+  until the six risk sections are added. The fix is to add each
+  section; for dimensions genuinely empty, a one-word "None" is valid.
+- Downstream tooling that assumes Stage 7 is always written by the
+  `pm` agent must accept `"agent": "orchestrator"` as well — the
+  auto-fold path sets it to `orchestrator`. Filter by
+  `"auto_from_stage_06"` instead if the author matters.
+- Stage 1 gate gains a new `"required_sections_complete"` field.
+  Parsers with strict schemas should accept it.
+
 ### Still pending in `v2.x`
 
 The following planned items ship in later `v2.x` releases, as they break
 orthogonal things and benefit from staged rollout:
 
-- `v2.2` — Expanded brief template (rollback, FF, migration, observability,
-  SLO, cost). Expanded design-spec template. Stage 7 folded into Stage 6
-  when every acceptance criterion maps 1:1 to a passing test.
 - `v2.3` — Split `dev-qa` from `dev-platform`. Security Engineer agent
   with veto. Automated pre-review gate (Stage 4.5) for lint + SCA.
   Approval-derivation hook (parse `REVIEW: APPROVED` from review files).
+  Scoped peer-review matrix (1+1 for area-contained changes).
 - `v2.4` — Deployment-adapter seam (`.claude/adapters/{docker-compose,k8s,
   terraform}/`). Runbook requirement on Stage 8.
 - `v2.5` — Budget gate, cross-run meta-retro, lesson auto age-out, positive
