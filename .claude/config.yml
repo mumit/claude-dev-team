@@ -9,7 +9,13 @@
 # individual .claude/adapters/<name>.md files for per-adapter config.
 
 framework:
-  version: "2.4"
+  # Source of truth for the framework version lives in the repo-root
+  # VERSION file. Bootstrap stamps .claude/VERSION in the target project
+  # from that file, and this field is updated alongside each release.
+  # Tooling that needs the version at runtime should prefer
+  # .claude/VERSION over this value, since the config file can be
+  # edited by hand.
+  version: "2.5.0"
 
 deploy:
   # Which adapter Stage 8 uses.

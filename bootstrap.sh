@@ -72,6 +72,18 @@ else
   echo "⏭️   .claude/config.yml already exists — not touched"
 fi
 
+# Stamp .claude/VERSION from the framework's VERSION file (v2.5.1+). Every
+# bootstrap run overwrites this so a re-run brings the installed project up
+# to the framework's current version. Consumers can `cat .claude/VERSION`
+# at any time to know which framework version they're running.
+if [ -f "$SCRIPT_DIR/VERSION" ]; then
+  cp "$SCRIPT_DIR/VERSION" "$TARGET/.claude/VERSION"
+  FRAMEWORK_VERSION="$(tr -d '[:space:]' < "$TARGET/.claude/VERSION")"
+  echo "🏷️   Stamped .claude/VERSION → $FRAMEWORK_VERSION"
+else
+  echo "⚠️   VERSION file missing from framework source — .claude/VERSION not stamped"
+fi
+
 # ── Create root files only if they don't exist ────────────
 if [ ! -f "$TARGET/CLAUDE.md" ]; then
   cp "$SCRIPT_DIR/CLAUDE.md" "$TARGET/CLAUDE.md"

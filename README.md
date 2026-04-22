@@ -1,10 +1,16 @@
 # Claude Code Dev Team
 
 A full simulated software development team running inside Claude Code.
-Includes a PM, Principal Engineer, and three specialist developers with
-peer code review, human checkpoints, deterministic gate validation,
-a hotfix path, codebase auditing, a roadmap workflow, and a persistent
-retrospective that promotes lessons into future runs.
+Includes a PM, Principal Engineer, and five specialist developers
+(backend, frontend, platform, QA, security-engineer) with peer code
+review, human checkpoints, deterministic gate validation, a hotfix
+path, lightweight tracks for small changes, pluggable deploy adapters,
+codebase auditing, a roadmap workflow, and a persistent retrospective
+that promotes lessons into future runs.
+
+**Current version**: see [`VERSION`](VERSION) (repo root) or
+`cat .claude/VERSION` in an installed project. Release history in
+[`CHANGELOG.md`](CHANGELOG.md).
 
 New here? Start with [**docs/concepts.md**](docs/concepts.md) for
 one-sentence definitions of agent, command, skill, rule, and hook.
