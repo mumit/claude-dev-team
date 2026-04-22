@@ -226,6 +226,37 @@ describe('bootstrap.sh', () => {
     assert.match(body, /runbook/i, 'dev-platform.md should require a runbook for Stage 8');
   });
 
+  it('stamps .claude/VERSION from the framework VERSION file', () => {
+    run(target);
+    const versionPath = path.join(target, '.claude', 'VERSION');
+    assert.ok(fs.existsSync(versionPath), '.claude/VERSION should exist after bootstrap');
+
+    const stamped = fs.readFileSync(versionPath, 'utf8').trim();
+    const source = fs.readFileSync(path.join(REPO_ROOT, 'VERSION'), 'utf8').trim();
+    assert.equal(stamped, source, '.claude/VERSION should match the framework VERSION file');
+    assert.match(stamped, /^\d+\.\d+\.\d+/, 'VERSION should be semver-shaped');
+  });
+
+  it('refreshes .claude/VERSION on re-install (always overwrites)', () => {
+    run(target);
+    // Simulate a stale VERSION from a prior release
+    const versionPath = path.join(target, '.claude', 'VERSION');
+    fs.writeFileSync(versionPath, '1.0.0\n');
+    run(target);
+    const stamped = fs.readFileSync(versionPath, 'utf8').trim();
+    const source = fs.readFileSync(path.join(REPO_ROOT, 'VERSION'), 'utf8').trim();
+    assert.equal(stamped, source, '.claude/VERSION should be refreshed on every bootstrap run');
+  });
+
+  it('.claude/config.yml framework.version matches the repo VERSION file', () => {
+    run(target);
+    const configBody = fs.readFileSync(path.join(target, '.claude', 'config.yml'), 'utf8');
+    const match = configBody.match(/framework:\s*(?:#[^\n]*\n\s*)*[^\n]*\n\s*version:\s*"([^"]+)"/);
+    assert.ok(match, 'config.yml should declare framework.version');
+    const repoVersion = fs.readFileSync(path.join(REPO_ROOT, 'VERSION'), 'utf8').trim();
+    assert.equal(match[1], repoVersion, 'framework.version should match repo VERSION — keep them in sync on each release');
+  });
+
   it('makes gate-validator.js executable', () => {
     run(target);
     const hookPath = path.join(target, '.claude', 'hooks', 'gate-validator.js');
