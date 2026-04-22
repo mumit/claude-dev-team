@@ -80,8 +80,10 @@ Checklist the reviewer must apply:
 Gate file: `pipeline/gates/stage-05-deps.json` — requires 1 approval,
 `"track": "dep-update"`.
 
-### Stage 6 — Full test suite (dev-platform)
+### Stage 6 — Full test suite (dev-qa)
 
+Invoke: `dev-qa` agent (owns Stage 6 from v2.3; see `.claude/rules/pipeline.md`
+§Stage 6).
 Run the full suite. Pass bar: **no regression**.
 
 Gate file: `pipeline/gates/stage-06.json` with `"track": "dep-update"` and

@@ -35,6 +35,24 @@ Pass `pipeline/hotfix-spec.md` to each dev agent instead of `pipeline/design-spe
 Human checkpoints still apply at Checkpoint C (after tests pass).
 PM sign-off is required before deploy regardless of urgency.
 
+## Stage 9 — Retrospective (abbreviated)
+
+After Stage 8 completes (or on a red halt), run an abbreviated retro.
+The parallel 5-agent contribution pass is skipped. Instead:
+
+- The dev(s) who built the fix each append one section to
+  `pipeline/retrospective.md` under their `## dev-{area}` heading using
+  the four-heading template.
+- Principal runs the synthesis step as normal.
+
+Gate file: `pipeline/gates/stage-09.json` with `"track": "hotfix"`.
+
+Promotion limit: 0 for hotfix retros. `pipeline/lessons-learned.md` is not
+updated from a hotfix run unless the Principal explicitly marks a lesson as
+durable and distinct from the incident itself. Rationale: lessons extracted
+under pressure are often too narrow — they describe this bug, not a
+generalisable rule.
+
 ## Reviewer Instruction for Hotfix
 
 When invoking each reviewer agent during Stage 5, pass this additional instruction:

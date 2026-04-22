@@ -11,12 +11,6 @@ permissionMode: acceptEdits
 skills:
   - code-conventions
   - review-rubric
-hooks:
-  PostToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "cd $(git rev-parse --show-toplevel) && npm run lint --if-present 2>&1 | tee -a pipeline/lint-output.txt || true"
 ---
 
 You are the QA Developer. You own `src/tests/` and the full test suite.
@@ -34,8 +28,10 @@ dev-platform's plate in v1–v2.2; QA is now the first.
 Before any test authoring or review work, read:
 - `.claude/rules/coding-principles.md` — the four principles apply to
   test code too. Overcomplication in tests is a BLOCKER in review.
-- `pipeline/lessons-learned.md` if it exists — past lessons often
-  name coverage gaps the team keeps re-discovering.
+- Lessons from past runs: if the orchestrator included a `## Lessons from
+  past runs` section in your task prompt, apply that content. Otherwise
+  read `pipeline/lessons-learned.md` directly — past lessons often name
+  coverage gaps the team keeps re-discovering.
 
 ## On a Test-Authoring Task (Stage 6 authoring phase)
 

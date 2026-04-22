@@ -253,7 +253,15 @@ gate's `"review_shape"` and `"required_approvals"` fields.
 Used when the diff is **area-contained**: every changed file lives under
 one of `src/backend/`, `src/frontend/`, `src/infra/`, or `src/tests/`,
 with no cross-area edits. One reviewer from a different area is
-sufficient. The pairing uses the same cross-area convention as `/quick`:
+sufficient. The pairing uses the same cross-area convention as `/quick`.
+
+**Gate pre-creation (required for scoped reviews).** Before invoking the
+reviewer, the orchestrator must write `pipeline/gates/stage-05-{area}.json`
+with `"required_approvals": 1` and `"review_shape": "scoped"`. The
+`approval-derivation.js` hook defaults newly-created gates to
+`required_approvals: 2`. If the gate doesn't pre-exist with the correct
+value, the hook creates a matrix gate and a single approval never flips the
+status to PASS.
 
 | Owning area    | Default reviewer     |
 |----------------|----------------------|
@@ -482,7 +490,8 @@ Not gated by user approval — retros on failed runs are the most valuable.
 
 Step 9a — Contribution (parallel, read-heavy):
   Invoke in parallel: `pm`, `principal`, `dev-backend`, `dev-frontend`,
-  `dev-platform`. Each appends a section to `pipeline/retrospective.md`
+  `dev-platform`, `dev-qa`. When Stage 4.5b fired, also invoke
+  `security-engineer`. Each appends a section to `pipeline/retrospective.md`
   using the four-heading template. Each produces one concrete lesson.
 
 Step 9b — Synthesis:

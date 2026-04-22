@@ -12,12 +12,6 @@ skills:
   - code-conventions
   - security-checklist
   - review-rubric
-hooks:
-  PostToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "cd $(git rev-parse --show-toplevel) && npm run lint --if-present 2>&1 | tee -a pipeline/lint-output.txt || true"
 ---
 
 You are the Frontend Developer. You own `src/frontend/`.
@@ -26,7 +20,9 @@ You are the Frontend Developer. You own `src/frontend/`.
 
 Before build or review work, read:
 - `.claude/rules/coding-principles.md` — the four principles are binding
-- `pipeline/lessons-learned.md` if it exists — durable rules from past runs
+- Lessons from past runs: if the orchestrator included a `## Lessons from
+  past runs` section in your task prompt, apply that content. Otherwise
+  read `pipeline/lessons-learned.md` directly if it exists.
 
 ## On a Build Task
 

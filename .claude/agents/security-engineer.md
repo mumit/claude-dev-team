@@ -27,8 +27,10 @@ Before any review, read:
 - `.claude/rules/coding-principles.md` — the four principles bind you
   as a reviewer too (no fix-forward, flag overcomplication, flag drive-by)
 - `.claude/skills/security-checklist/SKILL.md` — the domain rubric
-- `pipeline/lessons-learned.md` — past lessons often name classes of
-  issue the team has shipped before
+- Lessons from past runs: if the orchestrator included a `## Lessons from
+  past runs` section in your task prompt, apply that content. Otherwise
+  read `pipeline/lessons-learned.md` directly — past lessons often name
+  classes of issue the team has shipped before.
 
 ## Triggering heuristic (orchestrator applies this)
 
@@ -40,9 +42,15 @@ conditions matches the diff:
    `*token*`, `*credential*`
 2. New or upgraded dependencies in `package.json`, `requirements.txt`,
    `pyproject.toml`, `Gemfile`, `go.mod`, `composer.json`, `Pipfile`
-3. Changes to `Dockerfile`, `docker-compose*.yml` service images, base
-   image upgrades
-4. Any file under `src/infra/` (IaC, CI config, environment setup)
+3. Changes to `Dockerfile` or `docker-compose*.yml` that add/modify a
+   **service image, network, or volume** (environment-value-only changes
+   that qualify for `/config-only` do not trigger)
+4. Files under `src/infra/` that affect **network topology, IAM/RBAC,
+   TLS/certificates, secrets management, or CI/CD secret handling** — e.g.
+   `**/iam*`, `**/rbac*`, `**/network*`, `**/firewall*`, `**/certs*`,
+   `**/secrets*`, or any CI workflow file referencing `${{ secrets.* }}`
+   (config-only infra edits such as port numbers or healthcheck intervals
+   do **not** trigger)
 5. New or changed database migrations
 6. New environment variables or secret references in `.env.example`
 

@@ -57,7 +57,10 @@ FILE(S): <list of files>
 ### Stage 4 — Edit (single owning dev)
 
 Invoke the owning dev agent (`dev-backend`, `dev-frontend`, or
-`dev-platform`). Pass `TRACK=nano`:
+`dev-platform`). Pass `TRACK=nano` and explicitly instruct it to **skip**
+reading `pipeline/design-spec.md` — there is no design spec in a nano run.
+Also skip the `## Plan` and `## Assumptions` ceremony normally required by
+coding-principles §1 and §4.
 
 - Make only the described change — no opportunistic cleanup elsewhere
 - No `## Plan` or `## Assumptions` ceremony required

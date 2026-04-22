@@ -37,7 +37,10 @@ Compaction instructions: see `.claude/rules/compaction.md`
 Before any pipeline run:
 1. Read `.claude/rules/pipeline.md` and `.claude/rules/coding-principles.md`
 2. If `pipeline/lessons-learned.md` exists, read it — it is durable guidance
-   from past runs. Surface it to every agent you invoke.
+   from past runs. Include its full content in every agent invocation prompt
+   under a `## Lessons from past runs` heading rather than telling agents to
+   read it themselves. This saves one file-read per agent invocation and
+   keeps the content consistent across all agents in the same run.
 3. Check `pipeline/context.md` for any open @PM questions — resolve before Stage 4
 4. Never proceed past a gate that reads `"status": "FAIL"` or `"status": "ESCALATE"`
 

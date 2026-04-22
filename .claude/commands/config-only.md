@@ -78,8 +78,10 @@ Platform dev must run, in order:
 If any check fails, halt the track. The fix path is: address the lint/config
 error and re-run, or abort to `/quick` if the fix requires logic.
 
-### Stage 6 — Tests (dev-platform)
+### Stage 6 — Tests (dev-qa)
 
+Invoke: `dev-qa` agent (owns Stage 6 from v2.3; see `.claude/rules/pipeline.md`
+§Stage 6).
 Run the full test suite. Config changes don't introduce new acceptance
 criteria, so the pass bar is **no regression** — every test that passed
 before must pass now.

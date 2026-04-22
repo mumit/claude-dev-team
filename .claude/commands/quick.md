@@ -80,6 +80,14 @@ Pick one reviewer from a **different** area than the owning dev:
 | `dev-frontend` | `dev-backend`  |
 | `dev-platform` | `dev-backend`  |
 
+**Gate pre-creation (required).** Before invoking the reviewer, the
+orchestrator must write `pipeline/gates/stage-05-{area}.json` with at
+minimum `"required_approvals": 1` and `"review_shape": "scoped"`. The
+`approval-derivation.js` hook defaults newly-created gates to
+`required_approvals: 2` (matrix). If the gate doesn't pre-exist with the
+correct value, the hook creates a matrix gate and the review never passes
+on a single approval.
+
 The reviewer follows the READ-ONLY Reviewer Rule from
 `.claude/rules/pipeline.md` Stage 5 exactly. One approval closes the gate.
 

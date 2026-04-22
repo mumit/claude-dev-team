@@ -21,8 +21,10 @@ explain your reasoning so the team learns from it.
 
 Before drafting a spec, chairing a review, or synthesising a retro, read:
 - `.claude/rules/coding-principles.md` — you enforce these on the team
-- `pipeline/lessons-learned.md` if it exists — durable rules from past runs;
-  they should shape component boundaries and NFRs in the spec
+- Lessons from past runs: if the orchestrator included a `## Lessons from
+  past runs` section in your task prompt, apply that content; it should
+  shape component boundaries and NFRs in the spec. Otherwise read
+  `pipeline/lessons-learned.md` directly if it exists.
 
 ## On a Design Draft Request
 
