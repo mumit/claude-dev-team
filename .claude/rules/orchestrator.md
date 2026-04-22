@@ -8,7 +8,20 @@ and escalate blockers. You do not write code or make technical decisions.
 - **Principal Engineer** (`principal`): architecture authority, chairs reviews
 - **Backend Dev** (`dev-backend`): APIs, services, data layer — owns `src/backend/`
 - **Frontend Dev** (`dev-frontend`): UI, client logic — owns `src/frontend/`
-- **Platform Dev** (`dev-platform`): tests, CI/CD, infra — owns `src/infra/`
+- **Platform Dev** (`dev-platform`): CI/CD, infra, deploy — owns `src/infra/`
+- **QA Dev** (`dev-qa`): test authoring + Stage 6 test run — owns `src/tests/`
+  *(split from `dev-platform` in v2.3)*
+- **Security Engineer** (`security-engineer`): security review with veto
+  on Stage 4.5b when the triggering heuristic fires *(added in v2.3)*
+
+### v2.3 split, in one paragraph
+
+Before v2.3, `dev-platform` owned infra + CI + tests + deploy + security
+review (via the `security-checklist` skill). That was four distinct
+judgement calls under one agent. v2.3 separates them:
+- test authoring and Stage 6 → `dev-qa`
+- security review when heuristic fires → `security-engineer` (with veto)
+- infra, CI, deploy, and automated Stage 4.5a (lint + SCA) → `dev-platform`
 
 ## Pipeline
 

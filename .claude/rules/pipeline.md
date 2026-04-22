@@ -104,6 +104,63 @@ All three must have `"status": "PASS"` before proceeding.
 
 ---
 
+## Stage 4.5 — Pre-review checks (v2.3+)
+
+Between Stage 4 (build) and Stage 5 (peer code review), two automated
+gates must pass. These catch issues the toolchain already knows about
+before human (or agent) review tokens are spent on them.
+
+### Stage 4.5a — Pre-review gate (lint + type-check + SCA)
+
+Invoke: `dev-platform` agent.
+Scope: lint, type-check, dependency vulnerability scan, license
+allowlist check.
+Output: `pipeline/gates/stage-04-pre-review.json`.
+Gate key: `"status": "PASS"` with `"lint_passed": true`,
+`"type_check_passed": true`, and no `high`/`critical` SCA findings.
+
+See `.claude/agents/dev-platform.md` §"On a Pre-Review Task" for the
+exact commands. On failure, the owning dev (identified from the failing
+check) is re-invoked to fix. Stage 5 does not start until this gate
+passes.
+
+### Stage 4.5b — Security review (conditional, v2.3+)
+
+Invoke: `security-engineer` agent **only when** the triggering heuristic
+fires. The heuristic matches any of:
+
+- Paths: `src/backend/auth*`, `src/backend/crypto*`, `src/backend/payment*`,
+  `src/backend/pii*`, `src/backend/session*`, or any file named with
+  `*secret*` / `*token*` / `*credential*`
+- New or upgraded dependencies in `package.json`, `requirements.txt`,
+  `pyproject.toml`, `Gemfile`, `go.mod`, `composer.json`, `Pipfile`
+- Changes to `Dockerfile`, `docker-compose*.yml` service images
+- Any file under `src/infra/`
+- New or changed database migrations
+- New environment variables or secret references in `.env.example`
+
+If the heuristic does not fire, the security gate is skipped and the
+orchestrator records the skip decision in `pipeline/context.md` under
+`## Brief Changes` as `SECURITY-SKIP: <reason>`.
+
+Output: `pipeline/gates/stage-04-security.json`.
+Gate key: `"status": "PASS"` with `"security_approved": true` and
+`"veto": false`.
+
+A `veto: true` gate halts the pipeline. No peer-review approval can
+override a veto — the security-engineer must personally re-review the
+fix and flip the flag. Rationale: the Stage 5 reviewers are area
+specialists, not threat modellers; their "approved" on a
+security-relevant diff doesn't speak to the threat model.
+
+Both 4.5a and 4.5b must pass (when applicable) before Stage 5 begins.
+`/hotfix` skips 4.5a when the explicit blast-radius constraint in
+`pipeline/hotfix-spec.md` already bounds the scope tightly; it does NOT
+skip 4.5b when the heuristic fires (hotfixes *often* touch security
+surfaces, and that's exactly when review is most needed).
+
+---
+
 ## Stage 5 — Peer Code Review (Agent Teams preferred, sequential fallback)
 
 Each dev reviews the OTHER TWO devs' PRs.
@@ -160,16 +217,22 @@ On deadlock (reviewers disagree, no escalation): invoke `principal` agent to dec
 
 ---
 
-## Stage 6 — Test & CI (Platform Dev)
+## Stage 6 — Test & CI (QA Dev, v2.3+)
 
-Invoke: `dev-platform` agent
-Input: `src/` + `pipeline/brief.md` (acceptance criteria)
-Output: `pipeline/test-report.md`
-Gate file: `pipeline/gates/stage-06.json`
-Gate key: `"status": "PASS"` with `"all_acceptance_criteria_met": true`
+Invoke: `dev-qa` agent (was `dev-platform` in v1–v2.2; see v2.3 migration
+in `docs/migration/v1-to-v2.md` for the rationale).
+Input: `src/` + `pipeline/brief.md` (acceptance criteria).
+Output: `pipeline/test-report.md`.
+Gate file: `pipeline/gates/stage-06.json`.
+Gate keys:
+- `"status": "PASS"` with `"all_acceptance_criteria_met": true`
+- `"criterion_to_test_mapping_is_one_to_one": true | false` — this
+  drives the Stage 7 auto-fold
 
-On failure: identify owning dev from failing test, invoke that dev with failure context.
-Retry limit: 3 cycles. On 3rd failure of same test: auto-escalate to `principal`.
+On failure: identify owning dev from the failing test's path (dev-qa
+writes `"assigned_retry_to"` in the gate), invoke that dev with the
+failure context. Retry limit: 3 cycles. On 3rd identical failure,
+auto-escalate to `principal`.
 
 After gate passes → HUMAN CHECKPOINT C.
 

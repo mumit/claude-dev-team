@@ -135,11 +135,64 @@ PM sign-off is folded into Stage 6 when every acceptance criterion maps
 1:1 to a passing test; your automation should iterate gates rather than
 assume a `stage-07.json` file exists for every run.
 
-## `v2.3.0` — Agent catalogue expansion (forthcoming)
+## `v2.3.0` — Agent catalogue expansion
 
-*Ships in a follow-up release.* Adds `dev-qa` as a distinct agent,
-introduces a `security-engineer` agent with veto on security-relevant
-changes, and adds a pre-review gate (4.5) for automated lint + SCA.
+### What breaks
+
+- **`dev-platform` agent narrowed.** Test authoring and the Stage 6
+  test run moved to the new `dev-qa` agent. Scripts that directly
+  invoked `dev-platform` for `/stage 6` or test-related work must
+  switch to `dev-qa`. The `/pipeline` orchestrator handles routing
+  automatically.
+- **New gate files.** Full-track runs now write
+  `pipeline/gates/stage-04-pre-review.json`. Runs that trigger the
+  security heuristic also write `pipeline/gates/stage-04-security.json`.
+  Downstream tooling that enumerates gates (status dashboards, audit
+  exports) needs to recognise these.
+- **New Stage 6 field.** `"criterion_to_test_mapping_is_one_to_one"` on
+  `pipeline/gates/stage-06.json`. Legacy tooling missing this field
+  should default to `false` when absent — safer, triggers manual PM
+  sign-off at Stage 7.
+- **`security-checklist` skill demoted.** Still useful as a rubric
+  (loaded by `security-engineer`), but other agents should no longer
+  rely on it as a proxy for security review.
+
+### What doesn't break
+
+- `dev-backend` and `dev-frontend` are unchanged except for awareness
+  of the new agents in their prompts.
+- `pm` and `principal` unchanged (v2.2 was the last PM/Principal change).
+- Existing `src/tests/` layouts continue to work — `dev-qa` follows
+  existing conventions rather than imposing a new one.
+- The Stage 5 peer-review matrix is unchanged in v2.3; scoped peer
+  review ships in v2.3.1 as a follow-up.
+
+### Steps
+
+1. **Re-run bootstrap.** New `dev-qa.md` and `security-engineer.md`
+   land under `.claude/agents/`; narrowed `dev-platform.md` overwrites
+   the v2.2 version.
+2. **Verify agents are discoverable.** The agent picker or
+   `claude --help` should list `dev-qa` and `security-engineer`.
+3. **Update downstream tooling** that enumerates gates to accept
+   `stage-04-pre-review` and `stage-04-security` as valid stages.
+4. **Decide on the security heuristic fit.** Default heuristic triggers
+   on auth/crypto/PII/payments paths + dep changes + Dockerfile + IaC
+   + env vars. If your project uses a different directory layout,
+   adjust the heuristic in `.claude/rules/pipeline.md` Stage 4.5b.
+5. **Dry-run a small pipeline.** Confirm:
+   - Stage 4.5a fires and passes on green lint/SCA
+   - Stage 4.5b fires when heuristic matches, skips otherwise
+   - Stage 6 is invoked on `dev-qa`, not `dev-platform`
+   - Stage 7 auto-fold from v2.2 still works with v2.3's new field
+
+### Rollback
+
+`v2.3` is mostly additive. Deleting `dev-qa.md` and
+`security-engineer.md` plus reverting `dev-platform.md` to the v2.2
+version restores the old behaviour. The `stage-04-pre-review.json`
+and `stage-04-security.json` gate files become orphan data — safe to
+delete from old pipeline runs.
 
 ## `v2.4.0` — Deployment-adapter seam (forthcoming)
 

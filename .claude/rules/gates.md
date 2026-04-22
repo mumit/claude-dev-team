@@ -50,6 +50,44 @@ See `docs/brief-template.md` for the canonical shape.
 { "area": "backend | frontend | platform", "files_changed": [] }
 ```
 
+### Stage 04-pre-review (Pre-review automated checks, v2.3+)
+```json
+{
+  "stage": "stage-04-pre-review",
+  "status": "PASS | FAIL",
+  "agent": "dev-platform",
+  "lint_passed": true,
+  "type_check_passed": true,
+  "sca_findings": { "high": 0, "critical": 0 },
+  "license_check_passed": true
+}
+```
+
+Runs after all three Stage 4 area gates pass and before Stage 5 peer
+review starts. See `.claude/rules/pipeline.md` Stage 4.5 and
+`.claude/agents/dev-platform.md` §"On a Pre-Review Task".
+
+### Stage 04-security (Security review, v2.3+, conditional)
+```json
+{
+  "stage": "stage-04-security",
+  "status": "PASS | FAIL",
+  "agent": "security-engineer",
+  "security_approved": true | false,
+  "veto": true | false,
+  "triggering_conditions": ["path:auth", "dep:upgrade"]
+}
+```
+
+Written only when the heuristic in `.claude/rules/pipeline.md` Stage
+4.5b fires. A `veto: true` gate halts the pipeline regardless of other
+gates — the security-engineer must personally re-review the fix and
+flip the flag. Peer-review approvals cannot override a veto.
+
+When the heuristic does not fire, no gate file is written. The
+orchestrator records the skip decision in `pipeline/context.md` under
+`## Brief Changes` as `SECURITY-SKIP: <reason>`.
+
 ### Stage 05 (Code review, per area)
 ```json
 {
@@ -75,9 +113,18 @@ clean source tree.
   "tests_passed": 0,
   "tests_failed": 0,
   "failing_tests": [],
-  "assigned_retry_to": null
+  "assigned_retry_to": null,
+  "criterion_to_test_mapping_is_one_to_one": true
 }
 ```
+
+Authored by `dev-qa` from v2.3 forward (`dev-platform` in v1–v2.2).
+
+`criterion_to_test_mapping_is_one_to_one` (v2.3+) is required for the
+Stage 7 auto-fold. Set `true` only if every acceptance criterion has a
+dedicated test and no test covers multiple criteria with distinct
+verify conditions. When in doubt, set `false` and let the PM perform
+a manual sign-off.
 
 ### Stage 07 (PM sign-off)
 ```json
