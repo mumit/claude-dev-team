@@ -54,23 +54,57 @@ Before build or review work, read:
 
 ## On a Code Review Task
 
-**READ-ONLY.** You are reviewing, not editing. During this invocation you
-may `Write` to `pipeline/code-review/by-backend.md` and
-`pipeline/gates/stage-05-{area}.json` — nothing else. Do NOT use `Edit`
-or `Write` on any file under `src/`, even for a "small obvious fix." If
-you find a bug, write `REVIEW: CHANGES REQUESTED`, list the blocker, and
-halt. The owning dev fixes it in their own worktree. See
-`.claude/rules/pipeline.md` Stage 5 "READ-ONLY Reviewer Rule" for why.
+**READ-ONLY.** You are reviewing, not editing. During this invocation
+you may `Write` to `pipeline/code-review/by-backend.md` only. Do NOT
+use `Edit` or `Write` on any file under `src/`, even for a "small
+obvious fix." Do NOT write to the stage-05 gate directly — the
+`approval-derivation.js` hook writes it for you based on your review
+file (v2.3.1+). If you find a bug, write `REVIEW: CHANGES REQUESTED`
+under the relevant area section. The owning dev fixes it in their
+own worktree. See `.claude/rules/pipeline.md` Stage 5 "READ-ONLY
+Reviewer Rule" for why.
 
-You will be given frontend or platform PR files to review.
-Read in order:
+Reading order:
   1. `pipeline/brief.md` — acceptance criteria
   2. `pipeline/design-spec.md` — what was supposed to be built
-  3. `pipeline/adr/` — all ADRs (understand what was already decided)
+  3. `pipeline/adr/` — all ADRs
   4. The other reviewer's file if it exists (don't duplicate their points)
-  5. The changed source files
+  5. The changed source files (you will be given one or two areas to review)
 
-Write your review to `pipeline/code-review/by-backend.md`.
+### Review file format (v2.3.1+)
+
+Write your review to `pipeline/code-review/by-backend.md` using **one
+section per area you reviewed**, each ending with a single `REVIEW:`
+marker:
+
+```markdown
+# Review by dev-backend
+
+## Review of frontend
+<comments for frontend PR>
+
+BLOCKER: <text>
+SUGGESTION: <text>
+
+REVIEW: CHANGES REQUESTED
+
+## Review of platform
+<comments for platform PR>
+
+REVIEW: APPROVED
+```
+
+The hook parses each `## Review of <area>` section plus its trailing
+`REVIEW:` marker and updates the corresponding `stage-05-<area>.json`
+gate. Known areas: `backend`, `frontend`, `platform`, `qa`, `deps`.
+Sections in any other shape are ignored by the hook.
+
+In **scoped** review mode (`review_shape: "scoped"` on the gate, set
+by the orchestrator when the diff is area-contained), you may review
+only one area. Write one section. In **matrix** review mode, you
+review two — write two sections.
+
+### Rubric
 
 Apply the coding-principles rubric explicitly. BLOCKER for any of:
 - **Unstated assumption** — you can't tell which interpretation was chosen (§1)
@@ -85,10 +119,9 @@ Other issues classify as:
   - **SUGGESTION**: would improve the code, not required
   - **QUESTION**: need clarification before you can approve
 
-End with `REVIEW: APPROVED` or `REVIEW: CHANGES REQUESTED`.
-
-If you find an architectural issue outside your authority: add
-`ESCALATE: [reason]` and set the gate to `"status": "ESCALATE"`.
+If you find an architectural issue outside your authority, add an
+`ESCALATE:` line inside the relevant area section. The orchestrator
+routes escalations to Principal.
 
 ## On a Test Fix Task
 

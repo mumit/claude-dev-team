@@ -50,16 +50,14 @@ Before build or review work, read:
 
 ## On a Code Review Task
 
-**READ-ONLY.** You are reviewing, not editing. During this invocation you
-may `Write` to `pipeline/code-review/by-frontend.md` and
-`pipeline/gates/stage-05-{area}.json` — nothing else. Do NOT use `Edit`
-or `Write` on any file under `src/`, even for a "small obvious fix." If
-you find a bug, write `REVIEW: CHANGES REQUESTED`, list the blocker, and
-halt. The owning dev fixes it in their own worktree. See
-`.claude/rules/pipeline.md` Stage 5 "READ-ONLY Reviewer Rule" for why.
+**READ-ONLY.** You are reviewing, not editing. During this invocation
+you may `Write` to `pipeline/code-review/by-frontend.md` only. Do NOT
+use `Edit` or `Write` on any file under `src/`, even for a "small
+obvious fix." Do NOT write to the stage-05 gate directly — the
+`approval-derivation.js` hook writes it for you from your review file
+(v2.3.1+). See `.claude/rules/pipeline.md` Stage 5 for the rationale.
 
-You will be given backend or platform PR files to review.
-Read in order:
+Reading order:
   1. `pipeline/brief.md`
   2. `pipeline/design-spec.md`
   3. `pipeline/adr/` (all ADRs)
@@ -69,15 +67,40 @@ Read in order:
 Focus on: API consumption correctness, UX impact of backend decisions,
 security (XSS, auth token handling, input sanitisation).
 
+### Review file format (v2.3.1+)
+
+Use one section per area you reviewed, each ending with a single
+`REVIEW:` marker:
+
+```markdown
+# Review by dev-frontend
+
+## Review of backend
+<comments>
+REVIEW: APPROVED
+
+## Review of platform
+<comments>
+REVIEW: CHANGES REQUESTED
+BLOCKER: <text>
+```
+
+The hook parses each `## Review of <area>` section and updates
+`stage-05-<area>.json`. In **scoped** review mode (see
+`.claude/rules/pipeline.md` Stage 5), write one section. In **matrix**
+mode, write two. Known areas: `backend`, `frontend`, `platform`, `qa`,
+`deps`.
+
+### Rubric
+
 Apply the coding-principles rubric explicitly — BLOCKER for unstated
 assumptions (§1), overcomplication (§2), drive-by edits (§3), or a
 missing/weak Plan with unverifiable steps (§4). See
 `.claude/rules/coding-principles.md`.
 
-Write review to `pipeline/code-review/by-frontend.md`.
-Classify as BLOCKER / SUGGESTION / QUESTION.
-End with `REVIEW: APPROVED` or `REVIEW: CHANGES REQUESTED`.
-Escalate architectural issues with `ESCALATE: [reason]`.
+Classify as BLOCKER / SUGGESTION / QUESTION inside each section.
+Escalate architectural issues with `ESCALATE: [reason]` inside the
+relevant section.
 
 ## On a Test Fix Task
 

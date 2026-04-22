@@ -163,11 +163,71 @@ surfaces, and that's exactly when review is most needed).
 
 ## Stage 5 — Peer Code Review (Agent Teams preferred, sequential fallback)
 
-Each dev reviews the OTHER TWO devs' PRs.
-Review matrix:
+### Review shape — scoped vs matrix (v2.3.1+)
+
+Before Stage 5 begins, the orchestrator inspects the diff and picks one
+of two review shapes, then writes the chosen shape into each stage-05
+gate's `"review_shape"` and `"required_approvals"` fields.
+
+**Scoped review** — `review_shape: "scoped"`, `required_approvals: 1`.
+
+Used when the diff is **area-contained**: every changed file lives under
+one of `src/backend/`, `src/frontend/`, `src/infra/`, or `src/tests/`,
+with no cross-area edits. One reviewer from a different area is
+sufficient. The pairing uses the same cross-area convention as `/quick`:
+
+| Owning area    | Default reviewer     |
+|----------------|----------------------|
+| `src/backend/` | `dev-platform`       |
+| `src/frontend/`| `dev-backend`        |
+| `src/infra/`   | `dev-backend`        |
+| `src/tests/`   | `dev-backend`        |
+
+If Stage 4.5b fired, the `security-engineer` review is a **second signal**
+on the same gate — it does not substitute for the cross-area reviewer,
+but it does count toward `required_approvals` in scoped mode. The veto
+semantics of 4.5b still override: a `veto: true` halts the pipeline
+regardless of Stage 5 approvals.
+
+**Matrix review** — `review_shape: "matrix"`, `required_approvals: 2`.
+
+Used when the diff touches more than one area. The original v1 matrix
+applies:
   `dev-backend`  reviews: frontend + platform → writes `pipeline/code-review/by-backend.md`
   `dev-frontend` reviews: backend + platform  → writes `pipeline/code-review/by-frontend.md`
   `dev-platform` reviews: backend + frontend  → writes `pipeline/code-review/by-platform.md`
+
+Each area's stage-05 gate accumulates two approvals from reviewers
+whose own area is different.
+
+### Review file format (v2.3.1+)
+
+Reviewers now write per-area sections inside their review file, each
+ending with a `REVIEW: APPROVED` or `REVIEW: CHANGES REQUESTED` marker
+on its own line:
+
+```markdown
+# Review by <reviewer-name>
+
+## Review of backend
+<comments, BLOCKER/SUGGESTION/QUESTION entries>
+
+REVIEW: APPROVED
+
+## Review of platform
+<comments>
+
+REVIEW: CHANGES REQUESTED
+BLOCKER: <text>
+```
+
+The `approval-derivation.js` hook (registered as PostToolUse on
+Write/Edit in `.claude/settings.json`) parses these sections after the
+reviewer writes the file and updates `pipeline/gates/stage-05-<area>.json`
+accordingly. **Agents no longer author the `approvals` or
+`changes_requested` fields directly** — that path was how v1/v2 let
+reviewers effectively approve themselves. The hook is the single
+writer.
 
 ### READ-ONLY Reviewer Rule (strictly enforced)
 
@@ -191,26 +251,25 @@ the patched lines, and leave no audit trail tying the patch to a
 CHANGES-REQUESTED → addressed loop. If the one-line patch has a second
 bug, no reviewer is assigned to catch it.
 
-### Gate Merge Strategy for Stage 5
+### Gate merge strategy (v2.3.1+ — hook-derived)
 
-Each area gate (`pipeline/gates/stage-05-{area}.json`) must accumulate 2 approvals.
-When a reviewer writes their approval:
-- If the gate file does not yet exist: write a new gate with `"approvals": ["your-agent-name"]`
-- If the gate file exists: read it first, then update `"approvals"` to append your name
+Each area gate (`pipeline/gates/stage-05-{area}.json`) accumulates
+approvals via `approval-derivation.js`, not via agent self-write. The
+gate reaches `"status": "PASS"` when:
 
-Never overwrite a gate that already has entries in `"approvals"`. Append only.
-The gate reaches `"status": "PASS"` only when `"approvals"` contains 2 entries.
-If a reviewer writes `REVIEW: CHANGES REQUESTED`, do not add their name to `"approvals"`;
-instead add to `"changes_requested"` and leave `"status": "FAIL"`.
+- `approvals.length >= required_approvals` (1 for scoped, 2 for matrix)
+- `changes_requested` is empty
+
+An agent that manually edits the `approvals` array is running around
+the integrity model. The hook runs on every Write/Edit and reconciles
+the gate to the review file; any direct edit will be overwritten on
+the next reviewer's file save. Don't fight it.
 
 Pre-read requirement (pass to each reviewer agent):
   - `pipeline/brief.md`
   - `pipeline/design-spec.md`
   - `pipeline/adr/` (all files)
   - The other reviewer's file if already written (sequential fallback)
-
-Gate per PR area: needs 2 REVIEW:APPROVED entries in gate file
-  `pipeline/gates/stage-05-{area}.json`
 
 On architectural escalation: invoke `principal` agent. Principal ruling is binding.
 On deadlock (reviewers disagree, no escalation): invoke `principal` agent to decide.

@@ -194,6 +194,60 @@ version restores the old behaviour. The `stage-04-pre-review.json`
 and `stage-04-security.json` gate files become orphan data — safe to
 delete from old pipeline runs.
 
+## `v2.3.1` — Scoped review + approval integrity
+
+### What breaks
+
+- **Reviewer file format changed.** Reviewers write per-area sections
+  now (`## Review of backend\n...\nREVIEW: APPROVED`). Reviewers
+  still emitting a single trailing `REVIEW:` line without section
+  headers will have their verdicts ignored — the gate stays at `FAIL`
+  until a properly-formatted review arrives.
+- **Agents can no longer write `approvals` directly.** The hook
+  (`approval-derivation.js`) is the single writer on Stage 5 gate
+  approvals. Direct writes are overwritten on the next reviewer file
+  save.
+- **Stage 5 gate `changes_requested` shape** changed from `[string]`
+  to `[{reviewer, timestamp}]`. Downstream parsers need to read the
+  `reviewer` field on the object.
+
+### What doesn't break
+
+- Existing `stage-05-<area>.json` gates from prior runs continue to
+  parse — the hook treats missing `required_approvals` as 2 (matrix
+  default) and missing `review_shape` as `"matrix"`.
+- `dev-qa`, `security-engineer`, and the `dev-*` agents all updated
+  in-place; no new file permissions needed beyond what v2.3 added.
+
+### Steps
+
+1. **Re-run bootstrap.** `.claude/hooks/approval-derivation.js` lands,
+   `.claude/settings.json` gets the new `PostToolUse` entry, and the
+   `dev-*` / `security-engineer` agents get the updated review-file
+   format instructions.
+2. **Archive any mid-flight reviews.** If a pipeline is between Stage 4
+   and Stage 5 at upgrade time, its `pipeline/code-review/by-*.md`
+   files are in the legacy single-verdict format. Either finish the
+   review under the legacy format before upgrading, or `/reset` and
+   restart Stage 5 under the new format.
+3. **Update any status dashboards** that iterate Stage 5 gates to
+   read `review_shape` and `required_approvals` (default to `matrix`
+   and `2` when absent) and to read `changes_requested[i].reviewer`
+   instead of treating each entry as a string.
+4. **Test the hook locally.** After bootstrap, write a dummy review
+   file under `pipeline/code-review/by-frontend.md` with one `##
+   Review of backend` section and `REVIEW: APPROVED`, then save (any
+   editor that triggers Claude Code's Write/Edit hook). Verify
+   `pipeline/gates/stage-05-backend.json` gets the `dev-frontend`
+   entry in `approvals`.
+
+### Rollback
+
+Delete `.claude/hooks/approval-derivation.js` and remove the
+`PostToolUse` block from `.claude/settings.json`. Agents fall back to
+writing approval arrays directly per v2.3 rules. Legacy single-verdict
+review files start working again.
+
 ## `v2.4.0` — Deployment-adapter seam (forthcoming)
 
 *Ships in a follow-up release.* Stage 8 stops assuming `docker-compose.yml`

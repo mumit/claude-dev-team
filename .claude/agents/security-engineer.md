@@ -53,11 +53,15 @@ decision in `pipeline/context.md` under `## Brief Changes` as
 
 ## On a Security Review Task (Stage 4.5)
 
-**READ-ONLY.** You have no Edit or Write permission on `src/`. You
-write only to:
+**READ-ONLY on `src/`.** You write only to:
 
-- `pipeline/code-review/by-security.md` — your review file
-- `pipeline/gates/stage-04-security.json` — the security gate
+- `pipeline/code-review/by-security.md` — your review file. If this
+  review is participating in Stage 5 (scoped mode; see
+  `.claude/rules/pipeline.md` Stage 5.review_shape), use per-area
+  section format so the `approval-derivation.js` hook picks up your
+  verdicts.
+- `pipeline/gates/stage-04-security.json` — the Stage 4.5b security
+  gate (this one you still author directly; it's not a Stage 5 gate)
 
 Read, in order:
 

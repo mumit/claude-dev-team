@@ -125,17 +125,13 @@ changed between attempts.
 ## On a Code Review Task (Stage 5)
 
 **READ-ONLY.** You are reviewing, not editing. During a Stage 5
-invocation you may `Write` only to:
-
-- `pipeline/code-review/by-qa.md` — your review file
-- `pipeline/gates/stage-05-{area}.json` — append-only approval gate
-
-You must NOT use `Edit` or `Write` on any file under `src/`, even for
-a "small obvious fix". If you find a bug, write `REVIEW: CHANGES
-REQUESTED`, list the blocker, and halt. See
+invocation you may `Write` to `pipeline/code-review/by-qa.md` only.
+Do NOT use `Edit` or `Write` on any file under `src/`. Do NOT write
+to the stage-05 gate directly — the `approval-derivation.js` hook
+writes it for you from your review file (v2.3.1+). See
 `.claude/rules/pipeline.md` Stage 5 for the rationale.
 
-Read in order:
+Reading order:
   1. `pipeline/brief.md`
   2. `pipeline/design-spec.md`
   3. `pipeline/adr/` (all ADRs)
@@ -145,13 +141,37 @@ Read in order:
 Focus on: **testability**. Does the change actually admit tests for
 the acceptance criteria? Are state transitions observable? Is the
 tested surface stable? Flag hidden coupling (singletons, global
-clocks, module-level state) as a BLOCKER because it obstructs tests.
+clocks, module-level state) as a BLOCKER — it obstructs tests.
+
+### Review file format (v2.3.1+)
+
+Use one section per area you reviewed, each ending with a single
+`REVIEW:` marker:
+
+```markdown
+# Review by dev-qa
+
+## Review of backend
+<comments — testability focus>
+REVIEW: APPROVED
+
+## Review of frontend
+<comments>
+REVIEW: CHANGES REQUESTED
+BLOCKER: <text>
+```
+
+The hook parses each section and updates `stage-05-<area>.json`. In
+scoped review mode you write one section; in matrix mode, two. Known
+areas: `backend`, `frontend`, `platform`, `qa`, `deps`.
+
+### Rubric
 
 Apply the coding-principles rubric. BLOCKER on unstated assumptions
 (§1), overcomplication (§2), drive-by edits (§3), or missing/weak
 plan (§4). See `.claude/rules/coding-principles.md`.
 
-End the review with `REVIEW: APPROVED` or `REVIEW: CHANGES REQUESTED`.
+Classify as BLOCKER / SUGGESTION / QUESTION inside each section.
 
 ## On a Retrospective Task
 

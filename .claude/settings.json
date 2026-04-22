@@ -39,6 +39,17 @@
     ]
   },
   "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/approval-derivation.js"
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "hooks": [

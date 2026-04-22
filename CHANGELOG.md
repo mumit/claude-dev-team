@@ -142,14 +142,46 @@ called out per release below. Full upgrade path: `docs/migration/v1-to-v2.md`.
   `security-engineer` as the review rubric, but other agents should
   not lean on it as a proxy for security review.
 
+### Added — `v2.3.1` (in progress — scoped review + approval integrity)
+
+- **Approval-derivation hook** (new). `.claude/hooks/approval-derivation.js`
+  runs as PostToolUse on Write/Edit and parses per-area sections in
+  `pipeline/code-review/by-<reviewer>.md` for `REVIEW: APPROVED` or
+  `REVIEW: CHANGES REQUESTED` markers. It then reconciles
+  `pipeline/gates/stage-05-<area>.json` accordingly. This closes the
+  "any agent can approve anyone" hole from v1/v2 where agents wrote
+  their own entries on the gate.
+- **Scoped peer review**. When the diff is area-contained (every
+  changed file under one of `src/<area>/`), Stage 5 uses
+  `review_shape: "scoped"` and `required_approvals: 1` — one reviewer
+  from a different area. When the diff crosses areas, the v1 matrix
+  applies with `required_approvals: 2`.
+- **Stage 5 gate schema**. New fields: `review_shape`
+  (`"scoped" | "matrix"`) and `required_approvals` (1 or 2).
+  `changes_requested` now carries objects `{reviewer, timestamp}`
+  instead of bare strings.
+- **12 new tests** in `tests/approval-derivation.test.js`. Total suite:
+  144 tests (up from 132 in v2.3), all green.
+
+### Breaking changes — `v2.3.1`
+
+- **Reviewer file format changed.** Reviewers now write one section per
+  area using `## Review of <area>` headers, each ending with a single
+  `REVIEW:` marker. Legacy single-verdict review files (no section
+  headers) are ignored by the hook — the gate stays at its default
+  `FAIL` until a properly-formatted review is written.
+- **Agents must not author `approvals` on stage-05 gates.** Any direct
+  write will be overwritten on the next reviewer file save. The hook
+  is now the single writer.
+- **Stage 5 gate `changes_requested` shape.** Now `[{reviewer, timestamp}]`
+  objects, previously `[string]`. Parsers should switch to reading the
+  object's `reviewer` field.
+
 ### Still pending in `v2.x`
 
 The following planned items ship in later `v2.x` releases, as they break
 orthogonal things and benefit from staged rollout:
 
-- `v2.3.1` — Approval-derivation hook (parse `REVIEW: APPROVED` from
-  review files and append to gate). Scoped peer-review matrix (1+1 for
-  area-contained changes). Shipped as a focused follow-up PR.
 - `v2.4` — Deployment-adapter seam (`.claude/adapters/{docker-compose,k8s,
   terraform}/`). Runbook requirement on Stage 8.
 - `v2.5` — Budget gate, cross-run meta-retro, lesson auto age-out, positive

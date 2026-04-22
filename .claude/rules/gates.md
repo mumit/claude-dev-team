@@ -88,22 +88,46 @@ When the heuristic does not fire, no gate file is written. The
 orchestrator records the skip decision in `pipeline/context.md` under
 `## Brief Changes` as `SECURITY-SKIP: <reason>`.
 
-### Stage 05 (Code review, per area)
+### Stage 05 (Code review, per area, v2.3.1+)
 ```json
 {
-  "area": "backend | frontend | platform",
-  "approvals": ["dev-frontend", "dev-platform"],
-  "changes_requested": [],
+  "area": "backend | frontend | platform | qa",
+  "review_shape": "scoped | matrix",
+  "required_approvals": 1 | 2,
+  "approvals": ["dev-frontend", "security-engineer"],
+  "changes_requested": [
+    { "reviewer": "dev-backend", "timestamp": "<ISO>" }
+  ],
   "escalated_to_principal": false
 }
 ```
 
-**Validity rule:** a Stage 05 gate's `approvals` entry is invalid if the
-named agent modified any file under `src/` during the same invocation.
-The READ-ONLY Reviewer Rule in `pipeline.md` forbids fix-forward patches.
-If a gate-validator hook detects a source-file edit in the same turn as
-an approval, treat the gate as FAIL and re-run the review from the
-clean source tree.
+**Authorship (v2.3.1+).** The `approvals` and `changes_requested`
+arrays are written by the `approval-derivation.js` hook, not by the
+reviewer agent. The hook parses per-area sections in
+`pipeline/code-review/by-<reviewer>.md` for `REVIEW: APPROVED` or
+`REVIEW: CHANGES REQUESTED` markers and reconciles the gate. Agents
+that write `approvals` directly will have their writes overwritten on
+the next reviewer file save — the hook is authoritative.
+
+**Review shape (v2.3.1+).** The orchestrator picks shape before Stage
+5 begins:
+- `scoped` — diff is area-contained; `required_approvals: 1`. One
+  reviewer from a different area suffices.
+- `matrix` — diff crosses areas; `required_approvals: 2`. The original
+  v1 matrix applies (each dev reviews the other two).
+
+**Status resolution.** `status: "PASS"` when
+`approvals.length >= required_approvals` AND `changes_requested` is
+empty. Otherwise `status: "FAIL"`.
+
+**Validity rule (still honour-system, enforcement deferred).** The
+READ-ONLY Reviewer Rule in `pipeline.md` forbids fix-forward patches.
+Automated detection (checking git status against reviewer activity)
+requires agent-identity tracking the current hook surface doesn't
+expose reliably. For now, any gate whose named approver modified
+`src/` in the same invocation is logically invalid even if it passes
+JSON validation — reviewers should self-enforce.
 
 ### Stage 06 (Tests)
 ```json

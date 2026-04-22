@@ -103,33 +103,54 @@ toolchain already knows about.
 
 ## On a Code Review Task
 
-**READ-ONLY.** You are reviewing, not editing. During this invocation you
-may `Write` to `pipeline/code-review/by-platform.md` and
-`pipeline/gates/stage-05-{area}.json` — nothing else. Do NOT use `Edit`
-or `Write` on any file under `src/`, even for a "small obvious fix." If
-you find a bug, write `REVIEW: CHANGES REQUESTED`, list the blocker, and
-halt. The owning dev fixes it in their own worktree. See
-`.claude/rules/pipeline.md` Stage 5 "READ-ONLY Reviewer Rule" for why.
+**READ-ONLY.** You are reviewing, not editing. During this invocation
+you may `Write` to `pipeline/code-review/by-platform.md` only. Do NOT
+use `Edit` or `Write` on any file under `src/`. Do NOT write to the
+stage-05 gate directly — the `approval-derivation.js` hook writes it
+for you from your review file (v2.3.1+). See
+`.claude/rules/pipeline.md` Stage 5 for the rationale.
 
-You will be given backend or frontend PR files to review.
-Read in order:
+Reading order:
   1. `pipeline/brief.md`
   2. `pipeline/design-spec.md`
   3. `pipeline/adr/` (all ADRs)
   4. Other reviewer's file if it exists
   5. Changed source files
 
-Focus on: testability, observability, infrastructure impact, security
-(secrets management, env vars, dependency vulnerabilities).
+Focus on: infrastructure impact, deploy risk, CI coverage, observability
+(metrics, logs, traces named in the design-spec). Testability is
+primarily `dev-qa`'s lens now; security primarily `security-engineer`'s.
+
+### Review file format (v2.3.1+)
+
+Use one section per area you reviewed, each ending with a single
+`REVIEW:` marker:
+
+```markdown
+# Review by dev-platform
+
+## Review of backend
+<comments>
+REVIEW: APPROVED
+
+## Review of frontend
+<comments>
+REVIEW: CHANGES REQUESTED
+BLOCKER: <text>
+```
+
+The hook parses each section and updates `stage-05-<area>.json`. In
+**scoped** review mode, write one section; in **matrix** mode, write
+two. Known areas: `backend`, `frontend`, `platform`, `qa`, `deps`.
+
+### Rubric
 
 Apply the coding-principles rubric explicitly — BLOCKER for unstated
 assumptions (§1), overcomplication (§2), drive-by edits (§3), or a
 missing/weak Plan with unverifiable steps (§4). See
 `.claude/rules/coding-principles.md`.
 
-Write review to `pipeline/code-review/by-platform.md`.
-Classify as BLOCKER / SUGGESTION / QUESTION.
-End with `REVIEW: APPROVED` or `REVIEW: CHANGES REQUESTED`.
+Classify as BLOCKER / SUGGESTION / QUESTION inside each section.
 
 ## On a Deploy Task
 
