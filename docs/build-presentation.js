@@ -619,9 +619,76 @@ function slideGettingStarted(pres, I) {
     x: 1.0, y: 5.12, w: 8, h: 0.4, fontSize: 14, fontFace: FONT_C, color: C.accent2, margin: 0 });
 }
 
+/** Slide: Pipeline Observability — /status, /pipeline-context, /resume, /stage */
+function slidePipelineObservability(pres) {
+  const s = pres.addSlide();
+  s.background = { color: C.off_white };
+  s.addText("Pipeline Observability", { x: 0.7, y: 0.35, w: 9, h: 0.55, fontSize: 30, fontFace: FONT_H, color: C.text_dark, bold: true, margin: 0 });
+  s.addText("Four commands to introspect and steer a live pipeline run — no restart needed.", {
+    x: 0.7, y: 0.9, w: 8.5, h: 0.3, fontSize: 12, fontFace: FONT_B, color: C.text_mid, margin: 0 });
+
+  const cmds = [
+    { cmd: "/status",           role: "Gate dashboard",        desc: "Reads all pipeline/gates/*.json and prints a stage-by-stage status table. The fastest check: which stages passed, failed, or are still pending." },
+    { cmd: "/pipeline-context", role: "State dump",            desc: "Full gate state + any open QUESTION: entries from pipeline/context.md. Run before /compact so the model preserves pipeline position across compaction." },
+    { cmd: "/resume <N>",       role: "Continue from stage N", desc: "Verifies all prior gates are PASS, then picks up at stage N. Used after a human checkpoint approval, a resolved ESCALATE, or a manual mid-stage fix." },
+    { cmd: "/stage <name>",     role: "Re-run one stage",      desc: "Invokes a single named stage explicitly — useful when one stage needs re-running with a corrected input without restarting the full pipeline." },
+  ];
+
+  for (let i = 0; i < 4; i++) {
+    const col = i % 2, row = Math.floor(i / 2);
+    const x = 0.5 + col * 4.8;
+    const y = 1.35 + row * 1.58;
+    s.addShape("rect", { x, y, w: 4.5, h: 1.38, fill: { color: C.card_bg },
+      shadow: { type: "outer", blur: 4, offset: 1, angle: 135, color: "000000", opacity: 0.08 } });
+    s.addShape("rect", { x, y, w: 0.06, h: 1.38, fill: { color: C.accent } });
+    s.addText(cmds[i].cmd, { x: x + 0.2, y: y + 0.1, w: 4.2, h: 0.32, fontSize: 13, fontFace: FONT_C, color: C.text_dark, bold: true, margin: 0 });
+    s.addText(cmds[i].role, { x: x + 0.2, y: y + 0.41, w: 4.2, h: 0.22, fontSize: 9.5, fontFace: FONT_B, color: C.accent, italic: true, margin: 0 });
+    s.addText(cmds[i].desc, { x: x + 0.2, y: y + 0.63, w: 4.2, h: 0.68, fontSize: 9.5, fontFace: FONT_B, color: C.text_mid, valign: "top", margin: 0 });
+  }
+
+  s.addShape("rect", { x: 0.5, y: 4.62, w: 9.1, h: 0.76, fill: { color: C.light_card } });
+  s.addShape("rect", { x: 0.5, y: 4.62, w: 0.05, h: 0.76, fill: { color: "5B21B6" } });
+  s.addText("More partial-pipeline commands:", { x: 0.65, y: 4.66, w: 9, h: 0.26, fontSize: 10, fontFace: FONT_H, color: C.text_dark, bold: true, margin: 0 });
+  s.addText("/design (Stages 1–2 only)  ·  /pipeline-brief (Stage 1 only)  ·  /pipeline-review (Stage 5 on current src/)  ·  /ask-pm (route a clarification mid-pipeline)  ·  /adr (create an Architecture Decision Record)  ·  /principal-ruling (binding technical ruling)", {
+    x: 0.65, y: 4.93, w: 8.8, h: 0.42, fontSize: 9, fontFace: FONT_B, color: C.text_mid, valign: "top", margin: 0 });
+}
+
+/** Slide: Codebase Health Suite — /audit, /audit-quick, /health-check, /roadmap */
+function slideCodebaseHealth(pres) {
+  const s = pres.addSlide();
+  s.background = { color: C.off_white };
+  s.addText("Codebase Health Suite", { x: 0.7, y: 0.35, w: 9, h: 0.55, fontSize: 30, fontFace: FONT_H, color: C.text_dark, bold: true, margin: 0 });
+  s.addText("A second mode of the framework — runs on existing code, independent of the active pipeline.", {
+    x: 0.7, y: 0.9, w: 8.5, h: 0.3, fontSize: 12, fontFace: FONT_B, color: C.text_mid, margin: 0 });
+
+  const tools = [
+    { cmd: "/audit",        when: "Deep onboarding or periodic review", desc: "4-phase audit with human checkpoints: Phase 0 Bootstrap (architecture map), Phase 1 Health (conventions + tests + docs), Phase 2 Deep Analysis (security, perf, complexity), Phase 3 Roadmap (prioritised improvement plan). Writes to docs/audit/." },
+    { cmd: "/audit-quick",  when: "Fast orientation or quick checkup",  desc: "Phases 0–1 only. Produces an architecture map and health findings in one pass, skipping deep analysis and roadmap generation. Good for onboarding onto an unfamiliar codebase." },
+    { cmd: "/health-check", when: "Monthly cadence",                   desc: "Diffs current state against prior audit findings: new violations, untested components, stale docs, TODO/FIXME age, dependency changes, roadmap progress. Writes docs/audit/health-check-YYYY-MM.md." },
+    { cmd: "/roadmap",      when: "Anytime — see what's next",         desc: "Reads docs/audit/10-roadmap.md and prints a status dashboard: batch progress, next 3 items, recently completed, and stalled items. Ends with the top systemic themes from the backlog." },
+  ];
+
+  for (let i = 0; i < 4; i++) {
+    const col = i % 2, row = Math.floor(i / 2);
+    const x = 0.5 + col * 4.8;
+    const y = 1.35 + row * 1.65;
+    s.addShape("rect", { x, y, w: 4.5, h: 1.5, fill: { color: C.card_bg },
+      shadow: { type: "outer", blur: 4, offset: 1, angle: 135, color: "000000", opacity: 0.08 } });
+    s.addShape("rect", { x, y, w: 0.06, h: 1.5, fill: { color: C.accent } });
+    s.addText(tools[i].cmd, { x: x + 0.2, y: y + 0.1, w: 4.2, h: 0.3, fontSize: 13, fontFace: FONT_C, color: C.text_dark, bold: true, margin: 0 });
+    s.addText("Use: " + tools[i].when, { x: x + 0.2, y: y + 0.4, w: 4.2, h: 0.22, fontSize: 9.5, fontFace: FONT_B, color: C.accent, italic: true, margin: 0 });
+    s.addText(tools[i].desc, { x: x + 0.2, y: y + 0.63, w: 4.2, h: 0.82, fontSize: 9.5, fontFace: FONT_B, color: C.text_mid, valign: "top", margin: 0 });
+  }
+
+  s.addShape("rect", { x: 0.5, y: 4.73, w: 9.1, h: 0.65, fill: { color: C.light_card } });
+  s.addShape("rect", { x: 0.5, y: 4.73, w: 0.05, h: 0.65, fill: { color: C.accent } });
+  s.addText("/audit phases:  0 — Bootstrap (architecture map)  ·  1 — Health (conventions, tests, docs)  ·  2 — Deep Analysis (security, perf, complexity)  ·  3 — Roadmap (prioritised improvement plan). Extensible via docs/audit-extensions.md.", {
+    x: 0.65, y: 4.77, w: 8.8, h: 0.58, fontSize: 9, fontFace: FONT_B, color: C.text_mid, valign: "middle", margin: 0 });
+}
+
 // ── Main build orchestrator ─────────────────────────────────
 
-/** Build the 14-slide presentation deck. */
+/** Build the 16-slide presentation deck. */
 async function build() {
   const pres = new pptxgen();
   pres.layout = "LAYOUT_16x9";
@@ -677,15 +744,19 @@ async function build() {
   slideVirtualTeam(pres);
   // 9. Gate System
   slideGateSystem(pres, I);
-  // 10. Stage 4.5 — Automated Checks
+  // 10. Pipeline Observability
+  slidePipelineObservability(pres);
+  // 11. Stage 4.5 — Automated Checks
   slideStage45(pres, I);
-  // 11. Stage 5 — Peer Review
+  // 12. Stage 5 — Peer Review
   slideStage5Review(pres);
-  // 12. Lessons-Learned Loop
+  // 13. Lessons-Learned Loop
   slideLessonsLearned(pres, I);
-  // 13. Safety & Trust
+  // 14. Safety & Trust
   slideSafetyTrust(pres, I);
-  // 14. Getting Started
+  // 15. Codebase Health Suite
+  slideCodebaseHealth(pres);
+  // 16. Getting Started
   slideGettingStarted(pres, I);
 
   const outPath = process.env.BUILD_PRESENTATION_OUT || "claude-dev-team-lifecycle.pptx";
