@@ -51,19 +51,26 @@ claude
 | I want to... | Command / Skill |
 |---|---|
 | Build a new feature end-to-end | `/pipeline` |
-| Make a small contained change (typo, docs, one-file refactor) | `/quick` |
+| Fix a doc typo, dead import, or comment (no runtime change) | `/nano` |
+| Make a small contained code change (≤ ~100 LOC, one area) | `/quick` |
 | Change config only (env vars, flag toggles, compose values) | `/config-only` |
 | Update a dependency | `/dep-update` |
 | Draft requirements before committing to a build | `/pipeline-brief` |
+| Run Stages 1–2 only (brief + design, no build) | `/design` |
 | Fix a production bug urgently | `/hotfix` |
 | Understand a codebase I'm new to | `/audit-quick` |
 | Deep-audit and build an improvement roadmap | `/audit` |
 | Work on a small/medium improvement | `implement` skill |
 | Review code before merging (non-pipeline) | `/review` |
+| Re-run Stage 5 peer review on current `src/` | `/pipeline-review` |
 | Check monthly codebase health | `/health-check` |
 | See improvement roadmap progress | `/roadmap` |
 | See pipeline status | `/status` |
 | Run a retrospective on a completed run | `/retrospective` |
+| Ask the PM a question mid-pipeline | `/ask-pm` |
+| Re-run a single pipeline stage | `/stage` |
+| Resume pipeline from a specific stage | `/resume` |
+| Archive current pipeline run, start fresh | `/reset` |
 | Resolve a technical disagreement | `/principal-ruling` |
 | Record an architecture decision | `/adr` |
 
@@ -99,6 +106,27 @@ The pipeline pauses three times for your review:
 Type `proceed` to advance. After Stage 8 (Deploy), Stage 9 (Retrospective)
 runs automatically — no checkpoint needed. Lessons promoted to
 `pipeline/lessons-learned.md` survive `/reset` and influence every future run.
+
+### Stage 4.5 — Automated pre-review checks (v2.3+)
+
+Between build and peer review, two automated gates run:
+
+- **Stage 4.5a** (always) — `dev-platform` runs lint, type-check, and a software
+  composition analysis (SCA) scan. Stage 5 does not start until this passes.
+- **Stage 4.5b** (conditional) — `security-engineer` reviews the diff when it touches
+  auth, crypto, PII, payments, secrets, new/upgraded dependencies, Dockerfiles with
+  network or volume changes, or security-relevant infra. The security-engineer has
+  **veto power**: a `veto: true` gate halts the pipeline regardless of peer-review
+  approvals. When the heuristic doesn't fire, the skip reason is recorded in
+  `pipeline/context.md`.
+
+### Stage 8 — Deploy adapters and runbook (v2.4+)
+
+Before Stage 8 runs, `pipeline/runbook.md` must exist with at minimum `## Rollback`
+and `## Health signals` sections — a missing runbook causes an immediate ESCALATE.
+Deploy is adapter-driven: set `deploy.adapter` in `.claude/config.yml` to
+`docker-compose` (default), `kubernetes`, `terraform`, or `custom`. Each adapter's
+instructions live in `.claude/adapters/<adapter>.md`.
 
 ---
 
@@ -177,25 +205,39 @@ your-project/
 │   │   ├── dev-platform.md            # Platform dev — CI, infra, deploy, pre-review
 │   │   ├── dev-qa.md                  # QA dev — test authoring + Stage 6 (v2.3+)
 │   │   └── security-engineer.md       # Security — threat model + veto (v2.3+)
+│   ├── adapters/                      # Stage 8 deploy adapters (v2.4+)
+│   │   ├── docker-compose.md          # Default adapter
+│   │   ├── kubernetes.md
+│   │   ├── terraform.md
+│   │   ├── custom.md
+│   │   └── README.md                  # Adapter contract
 │   ├── commands/
 │   │   ├── pipeline.md                # /pipeline — full feature build
+│   │   ├── nano.md                    # /nano — trivial single-file change (no review)
+│   │   ├── quick.md                   # /quick — single-area code change ≤ ~100 LOC
+│   │   ├── hotfix.md                  # /hotfix — urgent production fix
+│   │   ├── config-only.md             # /config-only — config-values-only change
+│   │   ├── dep-update.md              # /dep-update — dependency upgrade
 │   │   ├── pipeline-brief.md          # /pipeline-brief — draft brief only
+│   │   ├── design.md                  # /design — Stages 1–2 only (brief + spec)
 │   │   ├── pipeline-review.md         # /pipeline-review — Stage 5 re-run
 │   │   ├── pipeline-context.md        # /pipeline-context — compact context dump
 │   │   ├── retrospective.md           # /retrospective — run Stage 9 standalone
 │   │   ├── status.md                  # /status — pipeline dashboard
-│   │   ├── hotfix.md                  # /hotfix — urgent production fix
 │   │   ├── audit.md                   # /audit — full codebase audit
 │   │   ├── audit-quick.md             # /audit-quick — Phases 0–1 only
 │   │   ├── health-check.md            # /health-check — monthly delta scan
 │   │   ├── review.md                  # /review — pre-merge review
 │   │   ├── roadmap.md                 # /roadmap — improvement dashboard
-│   │   ├── design.md                  # /design — requirements + design
 │   │   ├── adr.md                     # /adr — architecture decision record
 │   │   ├── principal-ruling.md        # /principal-ruling — binding ruling
-│   │   └── ...                        # ask-pm, reset, resume, stage
+│   │   ├── ask-pm.md                  # /ask-pm — PM clarification mid-pipeline
+│   │   ├── reset.md                   # /reset — archive + start fresh
+│   │   ├── resume.md                  # /resume — resume from a stage
+│   │   └── stage.md                   # /stage — re-run one stage explicitly
 │   ├── hooks/
-│   │   └── gate-validator.js          # Deterministic gate checking
+│   │   ├── gate-validator.js          # Gate schema + status enforcement
+│   │   └── approval-derivation.js     # Derives Stage 5 approvals from review files (v2.3.1+)
 │   ├── references/
 │   │   ├── audit-phases.md            # Detailed audit phase definitions
 │   │   └── audit-extensions-example.md
@@ -213,12 +255,15 @@ your-project/
 │   │   ├── review-rubric/SKILL.md     # Pipeline Stage 5 review checklist
 │   │   ├── security-checklist/SKILL.md
 │   │   └── api-conventions/SKILL.md
+│   ├── config.yml                     # Opt-in: budget gate, async checkpoints, deploy adapter
 │   └── settings.json
 ├── pipeline/                          # Created by bootstrap, populated by /pipeline
 │   ├── context.md
 │   ├── lessons-learned.md             # Persistent across /reset — promoted lessons
+│   ├── runbook.md                     # Required before Stage 8 — rollback + health signals
 │   ├── gates/
 │   ├── adr/
+│   ├── code-review/                   # Stage 5 reviewer files (by-{agent}.md)
 │   └── ...
 └── src/
 ```
@@ -241,15 +286,70 @@ your-project/
 
 ## How Gates Work
 
-Every stage writes a JSON gate file to `pipeline/gates/`. The
-`gate-validator.js` hook runs after every subagent stop and reads these
-files — not prose. It exits with:
+Every stage writes a JSON gate file to `pipeline/gates/`. Two hooks in
+`.claude/settings.json` enforce gate integrity:
 
-- `0` — PASS, continue
-- `2` — FAIL, retry with owning agent
-- `3` — ESCALATE, halt and surface to user
+- **`gate-validator.js`** — runs after every subagent stop; reads gate files
+  deterministically and exits 0 (PASS), 2 (FAIL), or 3 (ESCALATE). FAIL retries
+  with the owning agent. ESCALATE halts and surfaces to you.
+- **`approval-derivation.js`** (v2.3.1+) — runs after every Write/Edit to a Stage 5
+  review file; parses `REVIEW: APPROVED` / `REVIEW: CHANGES REQUESTED` markers per
+  area section and derives the `approvals` and `changes_requested` arrays in
+  `pipeline/gates/stage-05-{area}.json`. Agents do not write to those arrays directly
+  — any direct edit is overwritten on the next reviewer file save. This closes the
+  self-approval hole: a reviewer cannot approve their own code.
 
-Your decision on any escalation is recorded in `pipeline/context.md`.
+Your decisions on escalations are recorded in `pipeline/context.md`.
+
+---
+
+## Opt-in Features (v2.5+)
+
+Three features in `.claude/config.yml` are disabled by default:
+
+### Budget gate
+
+```yaml
+budget:
+  enabled: true
+  tokens_max: 500000
+  wall_clock_max_min: 90
+  on_exceed: escalate   # or: warn
+```
+
+Tracks token + wall-clock usage per run in `pipeline/budget.md`. On exceed:
+`escalate` writes an ESCALATE gate and halts; `warn` logs the breach and
+continues. Useful for calibration runs and cost guardrails.
+
+### Async-friendly checkpoints
+
+```yaml
+checkpoints:
+  c:
+    auto_pass_when: all_criteria_passed   # or: no_warnings
+```
+
+Supported values: `no_warnings` (auto-pass if the gate has zero warnings),
+`all_criteria_passed` (Checkpoint C only — auto-pass if Stage 6 reports
+`all_acceptance_criteria_met: true`). Default behaviour (always wait for human)
+is unchanged when the key is absent. Security-sensitive work is unaffected —
+the Stage 4.5b veto overrides auto-pass.
+
+### PATTERN review tag
+
+No config needed. Reviewers can flag things done especially well with a
+`PATTERN:` line inside any Stage 5 review section:
+
+```markdown
+PATTERN: dependency injection lifecycle is explicit and testable —
+candidate for the team's default pattern
+
+REVIEW: APPROVED
+```
+
+The Principal harvests PATTERN entries during Stage 9 synthesis and can promote
+recurring ones to `pipeline/lessons-learned.md` as positive rules ("Use X
+because…" rather than "Don't do Y because…").
 
 ---
 

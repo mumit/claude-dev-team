@@ -14,6 +14,7 @@ files.
 
 | Release | Date | Release notes | Scope |
 |---|---|---|---|
+| v2.5.1 | 2026-04-23 | [docs/releases/v2.5.1.md](docs/releases/v2.5.1.md) | `/nano` track + correctness fixes (Stage 9 retro, Stage 5 scoped gate, security heuristic, compaction) + perf |
 | v2.5.0 | 2026-04-21 | [docs/releases/v2.5.0.md](docs/releases/v2.5.0.md) | Budget gate + PATTERN review tag + lesson auto age-out + async-friendly checkpoints — v2.x stack complete |
 | v2.4.0 | 2026-04-21 | [docs/releases/v2.4.0.md](docs/releases/v2.4.0.md) | Deployment-adapter seam (`.claude/adapters/`) + runbook requirement at Stage 8 |
 | v2.3.1 | 2026-04-21 | [docs/releases/v2.3.1.md](docs/releases/v2.3.1.md) | Scoped peer review + approval-derivation hook (closes self-approval hole) |
@@ -31,9 +32,13 @@ Full upgrade guide: [`docs/migration/v1-to-v2.md`](docs/migration/v1-to-v2.md).
 
 ---
 
-## [Unreleased]
+## [Unreleased] — v2.5.1
 
 ### Added
+- `/nano` track — new zero-ceremony command for trivial single-file changes
+  (doc edits, comment typos, dead imports). No brief, no review, no deploy.
+  Stages 0 → 4 → 6 (regression check) → 7 (auto-fold). Appends to
+  `## Fix Log` in `pipeline/context.md`.
 - `VERSION` file at the repo root. Bootstrap stamps `.claude/VERSION`
   in target projects so an installed framework can report its version
   via `cat .claude/VERSION`.
@@ -46,6 +51,29 @@ Full upgrade guide: [`docs/migration/v1-to-v2.md`](docs/migration/v1-to-v2.md).
 - Bootstrap integration tests covering the `.claude/VERSION` stamp,
   stale-VERSION refresh on re-install, and `framework.version`
   consistency with the repo `VERSION` file.
+- `/hotfix` Stage 9 section — abbreviated single-dev retro (zero
+  promotion limit; parallel contribution pass skipped). The section was
+  described in `retrospective.md` but absent from `hotfix.md`.
+
+### Fixed
+- **Stage 9 retro contribution** — `pipeline.md` Step 9a was missing
+  `dev-qa` and `security-engineer` from the parallel contribution pass.
+  Gate schema and `retrospective.md` already listed them; this aligns
+  the orchestrator instructions.
+- **Stage 5 scoped review** — orchestrator must pre-create
+  `pipeline/gates/stage-05-{area}.json` with `required_approvals: 1`
+  and `review_shape: "scoped"` before invoking the reviewer.
+  `approval-derivation.js` defaults newly-created gates to
+  `required_approvals: 2`; without pre-creation, a single scoped
+  approval never flips the gate to PASS.
+- **Stage 4.5b heuristic narrowed** — condition 3 (Docker/Compose) now
+  requires a service image, network, or volume change; condition 4
+  (`src/infra/`) replaced the broad path catch-all with specific
+  security-relevant patterns. Port-number and healthcheck-interval
+  changes no longer trigger a security review.
+- **Compaction** — Stage 5 review round counter per area is now listed
+  as state to preserve in `compaction.md`. Losing it after compaction
+  resets the two-round limit.
 
 ### Changed
 - **CHANGELOG restructured** to a thin index. Per-release detail moved
@@ -53,6 +81,11 @@ Full upgrade guide: [`docs/migration/v1-to-v2.md`](docs/migration/v1-to-v2.md).
   release. The previous structure had per-release sections here with
   substantial overlap with the new release files — drift risk — so
   this file now just points at them.
+
+### Performance
+- Removed per-write lint hook from `dev-backend`, `dev-frontend`,
+  `dev-platform`, and `dev-qa` agent frontmatter. Lint now runs only
+  in Stage 4.5a (the correct scope).
 
 ---
 
@@ -82,7 +115,8 @@ land in this file and the release notes from `v2.0.0` forward.
 
 ## Version-compare links
 
-[Unreleased]: https://github.com/mumit/claude-dev-team/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/mumit/claude-dev-team/compare/v2.5.1...HEAD
+[2.5.1]: https://github.com/mumit/claude-dev-team/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/mumit/claude-dev-team/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/mumit/claude-dev-team/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/mumit/claude-dev-team/compare/v2.3.0...v2.3.1

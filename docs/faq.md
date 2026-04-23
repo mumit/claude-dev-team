@@ -80,11 +80,11 @@ It loads the `pre-pr-review` skill which performs: full-file diff analysis (read
 
 **What is the virtual dev team? Is it just a gimmick?**
 
-It's a set of Claude Code agents — each defined in `.claude/agents/` with specific YAML frontmatter that constrains their model, file permissions, and tool access. The PM (Opus) can only write to `pipeline/`. Backend dev (Sonnet) can only write to `src/backend/`. This prevents the common problem of AI going off-scope and making changes across the entire codebase.
+It's a set of Claude Code agents — each defined in `.claude/agents/` with specific YAML frontmatter that constrains their model, file permissions, and tool access. The team has seven agents: PM, Principal, Backend Dev, Frontend Dev, Platform Dev, QA (`dev-qa`, added v2.3), and Security Engineer (`security-engineer`, added v2.3 with veto power on security diffs). Each agent is scoped to its area — for example, Backend dev can only write to `src/backend/`. This prevents the common problem of AI going off-scope and making changes across the entire codebase.
 
 **Why different models for different roles?**
 
-Opus is used for the PM and Principal because those roles require higher reasoning — writing requirements, making architectural decisions, resolving conflicts. Sonnet is used for the three developer roles because they're doing focused implementation work where speed matters more than breadth of reasoning.
+Opus is used for the PM, Principal, and Security Engineer because all three require broader judgment — requirements writing, architectural decisions, and threat modelling respectively. Sonnet is used for the four developer roles (Backend, Frontend, Platform, QA) because they're doing focused execution work where speed matters more than breadth of reasoning.
 
 **What are gates?**
 
@@ -94,9 +94,30 @@ Every pipeline stage writes a JSON file to `pipeline/gates/` with a status: PASS
 
 During Stage 5 (peer code review), developer agents may write only to their review file (`pipeline/code-review/by-{agent}.md`) and the approval gate — never to source files. If a reviewer finds a bug, they write `REVIEW: CHANGES REQUESTED` and halt; the orchestrator re-invokes the owning dev to fix it in their worktree. Silent inline fixes are prohibited: they bypass the owning dev, skip re-review of the patched lines, and leave no audit trail. A Stage 5 gate that has an approval from a reviewer who modified `src/` during the same invocation is invalid.
 
+**When does security review happen?**
+
+Automatically, at Stage 4.5b, when the diff matches any of these conditions: paths under `src/backend/auth*`, `src/backend/crypto*`, `src/backend/payment*`, `src/backend/pii*`, `src/backend/session*`, or files named `*secret*` / `*token*` / `*credential*`; new or upgraded dependencies; `Dockerfile` or `docker-compose*.yml` changes that add/modify a service image, network, or volume; `src/infra/` changes affecting network topology, IAM, TLS, secrets management, or CI/CD secret handling; new database migrations; new environment variables in `.env.example`. The `security-engineer` agent (Opus) reviews and can issue a veto — a `veto: true` gate halts the pipeline regardless of peer-review approvals. Stage 4.5a (lint + type-check + SCA) always runs before Stage 5.
+
+**Who writes the Stage 5 approval gates? Why can't I edit them directly?**
+
+The `approval-derivation.js` hook (registered in `.claude/settings.json`) writes them. It parses each reviewer's file (`pipeline/code-review/by-{agent}.md`) for `REVIEW: APPROVED` or `REVIEW: CHANGES REQUESTED` markers after every file save, then derives the `approvals` and `changes_requested` arrays in `pipeline/gates/stage-05-{area}.json`. Agents do not write to those arrays directly, and any manual edit to an approvals array is overwritten on the next reviewer file save. This prevents reviewers from approving their own work (the v2.3.1 self-approval fix).
+
 **What is Stage 9 — the Retrospective?**
 
-Stage 9 runs automatically after every deploy (success or failure). All five agents each append a section to `pipeline/retrospective.md` covering what worked, what went wrong, where the pipeline slowed them, and one concrete lesson. The Principal then synthesises and promotes at most two lessons to `pipeline/lessons-learned.md` — a file that survives `/reset`. Every agent reads `lessons-learned.md` at the start of their work in future runs, so the team gets measurably better over time. Run `/retrospective` to trigger Stage 9 standalone on the current pipeline state.
+Stage 9 runs automatically after every deploy (success or failure). All agents — six to seven depending on whether Stage 4.5b fired — each append a section to `pipeline/retrospective.md` covering what worked, what went wrong, where the pipeline slowed them, and one concrete lesson. The `security-engineer` contributes when it participated in the run. The Principal then synthesises and promotes at most two lessons to `pipeline/lessons-learned.md` — a file that survives `/reset`. Every agent reads `lessons-learned.md` at the start of their work in future runs, so the team gets measurably better over time. Run `/retrospective` to trigger Stage 9 standalone on the current pipeline state.
+
+**What is the runbook requirement at Stage 8?**
+
+Before Stage 8 (Deploy) begins, `pipeline/runbook.md` must exist and contain at least `## Rollback` and `## Health signals` sections. If the file is missing, the pipeline ESCALATEs immediately with a pointer to `docs/runbook-template.md`. The deploy is adapter-driven — select your adapter in `.claude/config.yml` under `deploy.adapter` (options: `docker-compose` (default), `kubernetes`, `terraform`, `custom`). Each adapter's instructions live in `.claude/adapters/<adapter>.md`.
+
+**Are there opt-in features I can enable?**
+
+Three features in `.claude/config.yml` are opt-in (off by default):
+- **Budget gate** — token + wall-clock budget tracking per run in `pipeline/budget.md`. On exceed: `escalate` halts; `warn` logs and continues.
+- **Async-friendly checkpoints** — each of Checkpoints A, B, C can be configured to auto-pass when a precondition holds (`no_warnings` or `all_criteria_passed`). Default: always wait for human.
+- **PATTERN review tag** — reviewers can tag things done especially well (`PATTERN: ...`) inside Stage 5 review sections; the Principal harvests these during retro synthesis and can promote them as positive rules to `lessons-learned.md`.
+
+All three leave default behaviour unchanged when the config key is absent.
 
 **What are the four coding principles?**
 

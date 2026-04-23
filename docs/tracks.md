@@ -11,6 +11,7 @@ request without asking.
 |---|---|---|---|
 | **Full** | `/pipeline` | 30–90 min | Feature-sized work: multi-area, API/schema changes, new surfaces, anything on the safety stoplist |
 | **Quick** | `/quick` | 5–10 min | Single area, ≤ ~100 LOC, no new dependency/surface/schema, nothing on the safety stoplist |
+| **Nano** | `/nano` | 1–3 min | At most two files, zero runtime behaviour change: doc edits, comment typos, dead imports |
 | **Config-only** | `/config-only` | 3–8 min | Diff is 100% config (env vars, flag toggles, compose values, `.env.example`) |
 | **Dep update** | `/dep-update` | 5–15 min | Package upgrade (npm, pip, gem, etc.) with at most the minimum code changes |
 | **Hotfix** | `/hotfix` | 10–20 min | Urgent production bug with a scoped, blast-radius-limited fix |
@@ -20,7 +21,7 @@ projects scale linearly with build + test time.
 
 ## Safety stoplist
 
-The three lighter tracks (`/quick`, `/config-only`, `/dep-update`) must
+The four lighter tracks (`/nano`, `/quick`, `/config-only`, `/dep-update`) must
 **not** be used for any change that touches:
 
 - Authentication, authorization, or session handling

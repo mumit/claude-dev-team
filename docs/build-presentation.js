@@ -154,7 +154,7 @@ function slideThreePillars(pres, I) {
   const pillars = [
     { icon: I.terminal, title: "Commands", sub: "You type, it runs", body: "Deterministic workflows with built-in checkpoints. /audit runs a 4-phase analysis. /pipeline builds a feature end-to-end. /review checks code before merge." },
     { icon: I.brain, title: "Skills", sub: "Claude loads automatically", body: "Passive knowledge triggered by context. Coding conventions, security checklists, review rubrics. Claude reads them when relevant — you don't have to paste anything." },
-    { icon: I.users, title: "Agents", sub: "Scoped AI actors", body: "A virtual team: PM, Principal, 3 Developers. Each has specific file permissions and a defined role. The PM can't write code. Devs can't touch each other's files." },
+    { icon: I.users, title: "Agents", sub: "Scoped AI actors", body: "A virtual team: PM, Principal, Backend, Frontend, Platform, QA, and Security Engineer. Each has specific file permissions. The PM can't write code. Devs can't touch each other's files." },
   ];
   for (let i = 0; i < 3; i++) {
     const x = 0.7 + i * 3.1;
@@ -411,29 +411,30 @@ function slidePreMergeReview(pres, I) {
 function slidePipelineTeam(pres, I) {
   const s = pres.addSlide();
   s.background = { color: C.off_white };
-  s.addText("/pipeline  —  Feature Build in 8 Stages", { x: 0.7, y: 0.25, w: 9, h: 0.5, fontSize: 26, fontFace: FONT_H, color: C.text_dark, bold: true, margin: 0 });
+  s.addText("/pipeline  —  Feature Build in 9 Stages", { x: 0.7, y: 0.25, w: 9, h: 0.5, fontSize: 26, fontFace: FONT_H, color: C.text_dark, bold: true, margin: 0 });
 
-  // Compact 8-stage flow
+  // Compact 9-stage flow
   const stages = [
     { n: "1", l: "Brief", a: "PM", c: "7C3AED" },
     { n: "2", l: "Design", a: "Principal", c: "6D28D9" },
-    { n: "A", l: "Checkpoint", a: "Human", c: C.accent },
     { n: "4", l: "Build", a: "3 Devs", c: "5B21B6" },
-    { n: "5", l: "Review", a: "Cross-review", c: "4C1D95" },
-    { n: "6", l: "Test", a: "Platform", c: "6D28D9" },
-    { n: "B", l: "Sign-off", a: "PM + Human", c: C.accent },
-    { n: "8", l: "Deploy", a: "Platform", c: "7C3AED" },
+    { n: "4.5", l: "Pre-review", a: "Platform", c: "4C1D95" },
+    { n: "5", l: "Review", a: "Agents", c: "7C3AED" },
+    { n: "6", l: "Test", a: "QA dev", c: "6D28D9" },
+    { n: "7", l: "Sign-off", a: "PM", c: "5B21B6" },
+    { n: "8", l: "Deploy", a: "Platform", c: "4C1D95" },
+    { n: "9", l: "Retro", a: "All agents", c: C.accent },
   ];
-  for (let i = 0; i < 8; i++) {
-    const x = 0.35 + i * 1.2;
-    s.addShape("rect", { x, y: 0.9, w: 1.0, h: 1.35, fill: { color: C.card_bg },
+  for (let i = 0; i < 9; i++) {
+    const x = 0.2 + i * 1.06;
+    s.addShape("rect", { x, y: 0.9, w: 0.95, h: 1.35, fill: { color: C.card_bg },
       shadow: { type: "outer", blur: 2, offset: 1, angle: 135, color: "000000", opacity: 0.06 } });
-    s.addShape("rect", { x, y: 0.9, w: 1.0, h: 0.04, fill: { color: stages[i].c } });
-    s.addShape("ellipse", { x: x + 0.3, y: 1.02, w: 0.38, h: 0.38, fill: { color: stages[i].c } });
-    s.addText(stages[i].n, { x: x + 0.3, y: 1.02, w: 0.38, h: 0.38, fontSize: 13, fontFace: FONT_H, color: C.white, align: "center", valign: "middle", bold: true, margin: 0 });
-    s.addText(stages[i].l, { x: x + 0.02, y: 1.48, w: 0.96, h: 0.3, fontSize: 9.5, fontFace: FONT_H, color: C.text_dark, bold: true, align: "center", margin: 0 });
-    s.addText(stages[i].a, { x: x + 0.02, y: 1.75, w: 0.96, h: 0.25, fontSize: 8, fontFace: FONT_B, color: C.text_mid, align: "center", margin: 0 });
-    if (i < 7) s.addShape("rightArrow", { x: x + 1.0, y: 1.38, w: 0.2, h: 0.12, fill: { color: C.border } });
+    s.addShape("rect", { x, y: 0.9, w: 0.95, h: 0.04, fill: { color: stages[i].c } });
+    s.addShape("ellipse", { x: x + 0.275, y: 1.02, w: 0.38, h: 0.38, fill: { color: stages[i].c } });
+    s.addText(stages[i].n, { x: x + 0.275, y: 1.02, w: 0.38, h: 0.38, fontSize: 11, fontFace: FONT_H, color: C.white, align: "center", valign: "middle", bold: true, margin: 0 });
+    s.addText(stages[i].l, { x: x + 0.02, y: 1.48, w: 0.91, h: 0.3, fontSize: 9, fontFace: FONT_H, color: C.text_dark, bold: true, align: "center", margin: 0 });
+    s.addText(stages[i].a, { x: x + 0.02, y: 1.75, w: 0.91, h: 0.25, fontSize: 7.5, fontFace: FONT_B, color: C.text_mid, align: "center", margin: 0 });
+    if (i < 8) s.addShape("rightArrow", { x: x + 0.95, y: 1.38, w: 0.11, h: 0.12, fill: { color: C.border } });
   }
 
   // Gate note
@@ -456,20 +457,17 @@ function slidePipelineTeam(pres, I) {
     ["Principal", "Opus", "Architecture, design review, ADRs", "Read + Bash (read-only)"],
     ["Backend", "Sonnet", "APIs, services, data layer", "src/backend/ only"],
     ["Frontend", "Sonnet", "UI components, client logic", "src/frontend/ only"],
-    ["Platform", "Sonnet", "Tests, CI/CD, deployment", "src/infra/ only"],
+    ["Platform", "Sonnet", "CI/CD, infra, lint, deploy", "src/infra/ only"],
+    ["QA dev", "Sonnet", "Test authoring, Stage 6 test run", "src/tests/ only"],
+    ["Security Eng.", "Opus", "Threat model, Stage 4.5b veto", "Read-only — veto power"],
   ];
   for (let r = 0; r < team.length; r++) {
-    const y = 3.65 + r * 0.33;
-    s.addShape("rect", { x: 0.7, y, w: 8.6, h: 0.31, fill: { color: r % 2 === 0 ? C.card_bg : C.light_card } });
+    const y = 3.63 + r * 0.27;
+    s.addShape("rect", { x: 0.7, y, w: 8.6, h: 0.25, fill: { color: r % 2 === 0 ? C.card_bg : C.light_card } });
     team[r].forEach((v, c) => {
-      s.addText(v, { x: hx[c], y, w: hw[c], h: 0.31, fontSize: 9, fontFace: c === 0 ? FONT_H : FONT_B, color: C.text_dark, bold: c === 0, valign: "middle", margin: 0 });
+      s.addText(v, { x: hx[c], y, w: hw[c], h: 0.25, fontSize: 8.5, fontFace: c === 0 ? FONT_H : FONT_B, color: C.text_dark, bold: c === 0, valign: "middle", margin: 0 });
     });
   }
-
-  // Insight
-  s.addImage({ data: I.lightbulb, x: 0.7, y: 5.38, w: 0.22, h: 0.22 });
-  s.addText("Role separation prevents scope creep. Devs can't touch each other's code. The PM can't make technical decisions.", {
-    x: 1.0, y: 5.35, w: 8.3, h: 0.25, fontSize: 9, fontFace: FONT_B, color: C.text_mid, valign: "middle", margin: 0 });
 }
 
 /** Slide 15: Safety & Trust Model — two columns. */

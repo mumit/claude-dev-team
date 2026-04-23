@@ -10,7 +10,7 @@ one-stop answer.
 | **Command** | `.claude/commands/*.md` | User types `/command-name` | A slash command. Drives a multi-step workflow from the user's side of the transcript (e.g. `/pipeline`, `/audit`, `/status`). |
 | **Skill** | `.claude/skills/<name>/SKILL.md` | An agent or the orchestrator reads and follows it | Reusable procedural knowledge or checklist (e.g. `implement`, `code-conventions`, `review-rubric`). Skills are instructions, not executors. |
 | **Rule** | `.claude/rules/*.md` | Loaded by the orchestrator at startup | Canonical, machine-and-human-readable definitions of pipeline stages, gate schema, escalation, and compaction behavior. Rules are what the orchestrator must obey. |
-| **Hook** | `.claude/hooks/*.js` + `.claude/settings.json` | Claude Code runs them on configured events | Deterministic code that runs outside the LLM — e.g. `gate-validator.js` runs after each subagent stop and enforces gate-file schema. Hooks are the non-negotiable safety layer. |
+| **Hook** | `.claude/hooks/*.js` + `.claude/settings.json` | Claude Code runs them on configured events | Deterministic code that runs outside the LLM — e.g. `gate-validator.js` enforces gate-file schema after each subagent stop; `approval-derivation.js` parses Stage 5 review files and derives approval gates after each write. Hooks are the non-negotiable safety layer. |
 
 ## How they compose
 
@@ -27,9 +27,9 @@ A typical `/pipeline` run touches all five:
    (`gate-validator.js`) which reads the newest gate file and exits
    non-zero if it's malformed or FAIL — halting the pipeline.
 5. After Stage 8 (Deploy), Stage 9 (Retrospective) runs automatically:
-   all five agents contribute lessons to `pipeline/retrospective.md`,
-   and the Principal promotes up to two to `pipeline/lessons-learned.md`
-   so the next run starts smarter.
+   all agents (six to seven, depending on whether Stage 4.5b fired) contribute
+   lessons to `pipeline/retrospective.md`, and the Principal promotes up to two
+   to `pipeline/lessons-learned.md` so the next run starts smarter.
 
 ## Rules of thumb
 

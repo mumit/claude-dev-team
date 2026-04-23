@@ -23,6 +23,7 @@ the files here are authoritative for framing.
 
 | Release | Date | One-line scope |
 |---|---|---|
+| [v2.5.1](v2.5.1.md) | 2026-04-23 | `/nano` track + 4 correctness fixes (Stage 9 retro, Stage 5 scoped gate pre-creation, security heuristic, compaction) + perf |
 | [v2.5.0](v2.5.0.md) | 2026-04-21 | Budget gate + PATTERN review tag + lesson auto age-out + async checkpoints — v2.x stack complete |
 | [v2.4.0](v2.4.0.md) | 2026-04-21 | Deployment-adapter seam (`.claude/adapters/`) + runbook requirement at Stage 8 |
 | [v2.3.1](v2.3.1.md) | 2026-04-21 | Scoped peer review + approval-derivation hook (closes self-approval hole) |
