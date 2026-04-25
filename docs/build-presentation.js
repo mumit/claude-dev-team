@@ -496,7 +496,7 @@ function slideVirtualTeam(pres) {
 }
 
 /** Slide 9: Gate system — PASS / FAIL / ESCALATE + two hooks. */
-function slideGateSystem(pres, I) {
+function slideGateSystem(pres) {
   const s = pres.addSlide();
   s.background = { color: C.off_white };
   s.addText("The Gate System", { x: 0.7, y: 0.35, w: 9, h: 0.55, fontSize: 30, fontFace: FONT_H, color: C.text_dark, bold: true, margin: 0 });
@@ -640,7 +640,7 @@ function slideStage5Review(pres) {
 }
 
 /** Slide 12: Lessons-learned loop — Stage 9 retro. */
-function slideLessonsLearned(pres, I) {
+function slideLessonsLearned(pres) {
   const s = pres.addSlide();
   s.background = { color: C.off_white };
   s.addText("The Learning Loop — Stage 9 Retrospective", { x: 0.7, y: 0.35, w: 9, h: 0.52, fontSize: 26, fontFace: FONT_H, color: C.text_dark, bold: true, margin: 0 });
