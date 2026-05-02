@@ -18,9 +18,12 @@ npm install
 ## Running Tests
 
 ```bash
-npm test                    # unit tests (gate-validator, etc.)
+npm test                    # all tests (265 pass — unit, integration, frontmatter, CLI, schemas, release, status)
 npm run test:integration    # integration tests (bootstrap.sh)
 npm run test:frontmatter    # YAML frontmatter schema tests for agents/skills
+npm run doctor              # verify all framework files are present (PASS/FAIL per file)
+npm run validate            # validate all pipeline gate files against JSON schemas
+npm run parity:check        # deep parity check — commands, rules, skills, reviewer, schemas, helpers
 ```
 
 All tests use Node's built-in `node:test` runner — no external test framework needed.
@@ -31,19 +34,23 @@ All tests use Node's built-in `node:test` runner — no external test framework 
 
 ## Project Structure
 
-This is a **framework/template**, not an application. There is no `src/` directory in the repo itself — `src/` is created by `bootstrap.sh` when installing into a target project.
+This is a **framework/template**, not an application. There is no `src/` directory in the repo itself — `src/` is created by `bootstrap.sh` (or `node scripts/bootstrap.js`) when installing into a target project.
 
 The key components:
 
 | Path | Purpose |
 |------|---------|
-| `.claude/agents/` | Agent definitions (PM, Principal, 3 devs) |
-| `.claude/commands/` | Slash commands (`/pipeline`, `/status`, etc.) |
-| `.claude/skills/` | Shared skill definitions (conventions, checklists) |
-| `.claude/rules/` | Pipeline rules, gate schema, escalation, orchestrator |
-| `.claude/hooks/` | Git/tool hooks (gate-validator.js) |
-| `pipeline/` | Runtime pipeline state (gates, context, artifacts) |
-| `bootstrap.sh` | Installs the framework into an existing project |
+| `.claude/agents/` | 8 agent definitions (PM, Principal, 5 devs, reviewer) |
+| `.claude/commands/` | 23 slash commands (`/pipeline`, `/status`, etc.) |
+| `.claude/skills/` | 6 shared skill definitions (conventions, checklists) |
+| `.claude/rules/` | 7 rule files: pipeline, gates, escalation, coding-principles, retrospective, compaction, orchestrator |
+| `.claude/hooks/` | `gate-validator.js`, `approval-derivation.js` |
+| `scripts/` | `claude-team.js` CLI + 15 helper scripts (status, gate-validator, approval-derivation, security-heuristic, etc.) |
+| `schemas/` | JSON Schema for every pipeline gate (`gate.schema.json` + `stage-01` through `stage-09`) |
+| `templates/` | 11 canonical pipeline artifact templates (brief, design-spec, runbook, adr, review, etc.) |
+| `examples/tiny-app/` | Minimal Node project for dogfooding bootstrap and pipeline commands |
+| `pipeline/` | Runtime pipeline state (gates, context, artifacts) — created in target projects |
+| `bootstrap.sh` / `scripts/bootstrap.js` | Installs the framework into an existing project |
 
 See `AGENTS.md` for the full team and command reference.
 
@@ -63,7 +70,8 @@ See `AGENTS.md` for the full team and command reference.
 
 ## Bootstrap Script
 
-`bootstrap.sh` copies the framework into an existing project. If you modify it:
+Both `bootstrap.sh` and `scripts/bootstrap.js` copy the framework into an
+existing project. They produce identical output. If you modify either:
 
 - Test with `npm run test:integration`
 - Verify it runs on both macOS and Linux (CI covers both)
@@ -140,7 +148,9 @@ executable instructions in the skill that belong in a command instead
 3. The body is the agent's system prompt: role, working rules, output
    format, any area-specific gates.
 4. If the agent is part of the core team referenced by the pipeline,
-   update `.claude/rules/orchestrator.md` and `AGENTS.md`.
+   update `.claude/rules/orchestrator.md`, `AGENTS.md`, and `README.md`.
+   Also run `npm run parity:check` — it verifies the reviewer agent is
+   present and agent prompts meet minimum line counts.
 5. Test: `npm run test:frontmatter` must pass. A full pipeline run is
    the end-to-end smoke test.
 

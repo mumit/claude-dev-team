@@ -7,7 +7,7 @@ A simulated software development team inside Claude Code.
 ## What Is This?
 
 When you run `/pipeline add user authentication`, you're not prompting a single AI.
-You're dispatching work to a coordinated team of seven specialists — each with its
+You're dispatching work to a coordinated team of eight specialists — each with its
 own role, file permissions, and accountability — running a structured, gate-enforced
 software development lifecycle.
 
@@ -38,6 +38,7 @@ graph TD
         Orchestrator --> PL["Platform Dev\nBuilds src/infra/\nCI/CD, deploy, lint"]
         Orchestrator --> QA["QA Dev\nAuthors + runs tests\nOwns src/tests/"]
         Orchestrator --> SE["Security Engineer\nReviews auth/PII/crypto\nVeto power on Stage 4.5b"]
+        Orchestrator --> RV["Reviewer\nStage 5 READ-ONLY\nPeer code review"]
     end
 ```
 
@@ -102,8 +103,12 @@ conditions are met (see [Opt-in Features](#opt-in-features)).
 ### 1. Install
 
 ```bash
-# In your project root
+# Option A: bash (requires rsync)
 curl -fsSL https://raw.githubusercontent.com/mumit/claude-dev-team/main/bootstrap.sh | bash
+
+# Option B: Node (no rsync required)
+git clone https://github.com/mumit/claude-dev-team.git
+node claude-dev-team/scripts/bootstrap.js /path/to/my-project
 ```
 
 The installer creates `.claude/` with agents, rules, hooks, skills, and commands.
@@ -653,24 +658,30 @@ promote to `lessons-learned.md` as a positive rule (not just a corrective one).
 
 ## Command Reference
 
-| Command | What it does | Time |
-|---|---|---|
-| `/pipeline <feature>` | Full pipeline, all 9 stages | 30–90 min |
-| `/quick <change>` | Mini-brief, single dev, single reviewer | 5–10 min |
-| `/nano <change>` | Single dev, affected tests only, no review | 1–3 min |
-| `/hotfix <bug>` | Expedited fix, blast-radius bounded | 10–20 min |
-| `/config-only <change>` | Config-only, lint + validate, no full review | 3–8 min |
-| `/dep-update <package>` | Dep upgrade, SCA scan, supply-chain review | 5–15 min |
-| `/status` | Show all gate files and current statuses | Instant |
-| `/pipeline-context` | Full state dump (use before compaction) | Instant |
-| `/pipeline-brief <feature>` | Draft a brief only, no implementation | 2–5 min |
-| `/pipeline-review` | Run Stage 5 code review on current `src/` | 5–15 min |
-| `/retrospective` | Run Stage 9 standalone on current pipeline | 3–8 min |
-| `/audit` | Full codebase audit — 4 phases | 30–60 min |
-| `/audit-quick` | Architecture + health scan only | 10–15 min |
-| `/health-check` | Monthly delta scan vs. last audit | 5–10 min |
-| `/roadmap` | Show current roadmap status dashboard | Instant |
-| `/reset` | Archive current pipeline, start fresh | Instant |
+Slash commands are the primary interface when Claude Code is running. The
+`scripts/claude-team.js` CLI provides equivalent functionality for CI,
+scripts, and automation.
+
+| Command | CLI equivalent | What it does | Time |
+|---|---|---|---|
+| `/pipeline <feature>` | `npm run pipeline -- "<feature>"` | Full pipeline, all 9 stages | 30–90 min |
+| `/quick <change>` | `npm run quick -- "<change>"` | Mini-brief, single dev, single reviewer | 5–10 min |
+| `/nano <change>` | `npm run nano -- "<change>"` | Single dev, affected tests only, no review | 1–3 min |
+| `/hotfix <bug>` | `npm run hotfix -- "<bug>"` | Expedited fix, blast-radius bounded | 10–20 min |
+| `/config-only <change>` | `npm run config-only -- "<change>"` | Config-only, lint + validate, no full review | 3–8 min |
+| `/dep-update <package>` | `npm run dep-update -- "<dep>"` | Dep upgrade, SCA scan, supply-chain review | 5–15 min |
+| `/status` | `npm run status` | Show all gate files and current statuses | Instant |
+| `/pipeline-context` | `npm run pipeline:context` | Full state dump (use before compaction) | Instant |
+| `/pipeline-brief <feature>` | `npm run pipeline:brief -- "<feature>"` | Draft a brief only, no implementation | 2–5 min |
+| `/pipeline-review` | `npm run pipeline:review` | Run Stage 5 code review on current `src/` | 5–15 min |
+| `/retrospective` | `npm run retrospective` | Run Stage 9 standalone on current pipeline | 3–8 min |
+| `/audit` | `npm run audit` | Full codebase audit — 4 phases | 30–60 min |
+| `/audit-quick` | `npm run audit:quick` | Architecture + health scan only | 10–15 min |
+| `/health-check` | `npm run health-check` | Monthly delta scan vs. last audit | 5–10 min |
+| `/roadmap` | `npm run roadmap` | Show current roadmap status dashboard | Instant |
+| `/reset` | `npm run reset` | Archive current pipeline, start fresh | Instant |
+| — | `npm run doctor` | Verify framework files are present | Instant |
+| — | `npm run validate` | Validate all gate files against schemas | Instant |
 
 ---
 
@@ -1048,9 +1059,11 @@ reviewer catching a real bug in real time is worth more than any amount of expla
 | The five building blocks (agents, commands, skills, rules, hooks) | `docs/concepts.md` |
 | Track details and safety stoplist | `docs/tracks.md` |
 | Common questions | `docs/faq.md` |
-| Migrating from v1 or v2.x | `docs/migration/v1-to-v2.md` |
+| Migrating from v1, v2.x, or to v2.6 | `docs/migration/v1-to-v2.md` |
 | Pipeline stage definitions (authoritative) | `.claude/rules/pipeline.md` |
-| Gate JSON schema | `.claude/rules/gates.md` |
+| Gate JSON schema | `.claude/rules/gates.md` and `schemas/` |
 | Coding principles (binding on all devs) | `.claude/rules/coding-principles.md` |
 | Runbook template | `docs/runbook-template.md` |
 | Brief template | `docs/brief-template.md` |
+| Automation CLI | `node scripts/claude-team.js help` |
+| Framework health check | `npm run doctor` / `npm run parity:check` |

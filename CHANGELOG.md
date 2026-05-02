@@ -14,6 +14,7 @@ files.
 
 | Release | Date | Release notes | Scope |
 |---|---|---|---|
+| v2.6.0 | 2026-05-01 | [docs/releases/v2.6.0.md](docs/releases/v2.6.0.md) | Automation layer: `scripts/claude-team.js` CLI + 15 helpers, 10 JSON schemas, 11 templates, `examples/tiny-app`, reviewer agent, 265-test suite |
 | v2.5.1 | 2026-04-23 | [docs/releases/v2.5.1.md](docs/releases/v2.5.1.md) | `/nano` track + correctness fixes (Stage 9 retro, Stage 5 scoped gate, security heuristic, compaction) + perf |
 | v2.5.0 | 2026-04-21 | [docs/releases/v2.5.0.md](docs/releases/v2.5.0.md) | Budget gate + PATTERN review tag + lesson auto age-out + async-friendly checkpoints — v2.x stack complete |
 | v2.4.0 | 2026-04-21 | [docs/releases/v2.4.0.md](docs/releases/v2.4.0.md) | Deployment-adapter seam (`.claude/adapters/`) + runbook requirement at Stage 8 |
@@ -24,15 +25,81 @@ files.
 | v2.0.0 | 2026-04-21 | [docs/releases/v2.0.0.md](docs/releases/v2.0.0.md) | Lightweight tracks (`/quick`, `/config-only`, `/dep-update`) + scope routing |
 | v1.0.0 | 2026-04-17 | [docs/releases/v1.0.0.md](docs/releases/v1.0.0.md) | Pre-v2 baseline — 9-stage pipeline, gate validator, retrospective, lessons-learned |
 
-All seven v2.x releases shipped in one burst — the per-release granularity
+All v2.x releases shipped in one burst — the per-release granularity
 exists because each is a reviewable chunk with its own breaking-change
 scope, not because they rolled out over time.
 
 Full upgrade guide: [`docs/migration/v1-to-v2.md`](docs/migration/v1-to-v2.md).
+v2.6 migration: see the [v2.6.0 release notes](docs/releases/v2.6.0.md) — no
+breaking changes; automation layer is purely additive.
 
 ---
 
-## [Unreleased] — v2.5.1
+## [Unreleased]
+
+No unreleased changes.
+
+---
+
+## v2.6.0 — 2026-05-01
+
+Automation layer — `scripts/claude-team.js` + helper scripts, JSON schemas,
+templates, examples, and a dedicated reviewer agent. All additive; no
+slash-command behavior changed.
+
+**Version decision:** v2.6.0 (not v3). The automation surface is opt-in — slash
+commands remain authoritative for Claude Code users; the CLI is the integration
+layer for CI and non-Claude environments. No pipeline stage semantics, gate
+schemas, or adapter contracts changed. A major-version bump (v3) is reserved for
+a philosophical shift in pipeline operation — this release adds a parallel
+surface, not a replacement.
+
+### Added
+- `scripts/claude-team.js` — Node CLI dispatcher (mirrors all 23 slash commands
+  as subcommands; adds `status`, `doctor`, `validate`, `next`, `autofold`,
+  `roadmap`, `lessons`, `summary`, `review`, `security`, `runbook`)
+- 15 helper scripts: `approval-derivation.js`, `audit.js`, `bootstrap.js`,
+  `consistency.js`, `gate-validator.js`, `lessons.js`, `lint-syntax.js`,
+  `parity-check.js`, `pr-pack.js`, `release.js`, `roadmap.js`,
+  `runbook-check.js`, `security-heuristic.js`, `status.js`, `summary.js`
+- `schemas/` — JSON Schema for every pipeline gate: `gate.schema.json` plus
+  `stage-01` through `stage-09`; includes `stage-04a.schema.json` covering
+  the Stage 4.5a pre-review gate
+- `templates/` — 11 scaffold stubs used by `pipeline:scaffold`: `brief-template.md`,
+  `design-spec-template.md`, `runbook-template.md`, `adr-template.md`,
+  `build-template.md`, `clarification-template.md`, `pre-review-template.md`,
+  `pr-summary-template.md`, `retrospective-template.md`, `review-template.md`,
+  `test-report-template.md`. These are thin scaffolds distinct from the
+  detailed reference docs in `docs/*-template.md` — both sets are canonical
+  and serve different purposes (scaffolding vs. agent guidance).
+- `examples/tiny-app/` — minimal Node project for dogfooding `bootstrap.sh`
+  and pipeline commands
+- `.claude/agents/reviewer.md` — dedicated Stage 5 peer-reviewer agent (READ-ONLY;
+  sonnet model; tools: Read, Write, Glob, Grep; writes only to
+  `pipeline/code-review/by-<role>.md`). Replaces the ad-hoc review pass
+  embedded in dev-* agents
+- 50+ npm script shims in `package.json` mapping `npm run <command>` to
+  `node scripts/claude-team.js <command>`
+- Test suite expanded from 30 to 265 tests: gate schema validation,
+  helper-script unit tests, CLI subcommand tests, parity check, status
+  readiness, release helper, and presentation builder
+
+### Changed
+- `docs/parity/claude-dev-team-parity.md` — updated to reflect Codex automation
+  surface and clarify stage-numbering divergence (Claude uses 4.5a/4.5b; Codex
+  collapses to a single pre-review step)
+- `AGENTS.md`, `README.md`, `CLAUDE.md`, `CONTRIBUTING.md` — all updated to
+  document the 8-agent team, CLI surface, and new repo layout
+
+### Breaking
+
+None. Gate schemas, adapter contracts, agent file-permission scopes, and
+slash-command behavior are unchanged. The reviewer agent is additive — existing
+pipelines that embed review in dev-* agents continue to work.
+
+---
+
+## v2.5.1 — 2026-04-23 (was [Unreleased])
 
 ### Added
 - `/nano` track — new zero-ceremony command for trivial single-file changes
@@ -115,7 +182,8 @@ land in this file and the release notes from `v2.0.0` forward.
 
 ## Version-compare links
 
-[Unreleased]: https://github.com/mumit/claude-dev-team/compare/v2.5.1...HEAD
+[Unreleased]: https://github.com/mumit/claude-dev-team/compare/v2.6.0...HEAD
+[2.6.0]: https://github.com/mumit/claude-dev-team/compare/v2.5.1...v2.6.0
 [2.5.1]: https://github.com/mumit/claude-dev-team/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/mumit/claude-dev-team/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/mumit/claude-dev-team/compare/v2.3.1...v2.4.0

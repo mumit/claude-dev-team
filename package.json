@@ -1,6 +1,6 @@
 {
   "name": "claude-dev-team",
-  "version": "1.0.0",
+  "version": "2.6.0",
   "private": true,
   "description": "A full simulated software development team running inside Claude Code",
   "scripts": {

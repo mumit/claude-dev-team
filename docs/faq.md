@@ -16,7 +16,7 @@ Prompts are ephemeral — they vanish when the session ends or context compacts.
 
 **What do I need to get started?**
 
-Claude Code CLI (installed and authenticated), a Git repository, and about 10 minutes for initial setup. Run `bootstrap.sh` to install the `.claude/` directory structure into your project. Optionally create a `docs/audit-extensions.md` file for project-specific checks.
+Claude Code CLI (installed and authenticated), Node.js 20+, a Git repository, and about 10 minutes for initial setup. Run `bash bootstrap.sh` or `node scripts/bootstrap.js` to install the `.claude/` directory structure into your project. Optionally create a `docs/audit-extensions.md` file for project-specific checks.
 
 **Does this work with any language or framework?**
 
@@ -80,7 +80,7 @@ It loads the `pre-pr-review` skill which performs: full-file diff analysis (read
 
 **What is the virtual dev team? Is it just a gimmick?**
 
-It's a set of Claude Code agents — each defined in `.claude/agents/` with specific YAML frontmatter that constrains their model, file permissions, and tool access. The team has seven agents: PM, Principal, Backend Dev, Frontend Dev, Platform Dev, QA (`dev-qa`, added v2.3), and Security Engineer (`security-engineer`, added v2.3 with veto power on security diffs). Each agent is scoped to its area — for example, Backend dev can only write to `src/backend/`. This prevents the common problem of AI going off-scope and making changes across the entire codebase.
+It's a set of Claude Code agents — each defined in `.claude/agents/` with specific YAML frontmatter that constrains their model, file permissions, and tool access. The team has eight agents: PM, Principal, Backend Dev, Frontend Dev, Platform Dev, QA (`dev-qa`, added v2.3), Security Engineer (`security-engineer`, added v2.3 with veto power on security diffs), and a dedicated Reviewer (`reviewer`, added v2.6 — READ-ONLY Stage 5 peer reviewer). Each agent is scoped to its area — for example, Backend dev can only write to `src/backend/`. This prevents the common problem of AI going off-scope and making changes across the entire codebase.
 
 **Why different models for different roles?**
 
@@ -104,7 +104,7 @@ The `approval-derivation.js` hook (registered in `.claude/settings.json`) writes
 
 **What is Stage 9 — the Retrospective?**
 
-Stage 9 runs automatically after every deploy (success or failure). All agents — six to seven depending on whether Stage 4.5b fired — each append a section to `pipeline/retrospective.md` covering what worked, what went wrong, where the pipeline slowed them, and one concrete lesson. The `security-engineer` contributes when it participated in the run. The Principal then synthesises and promotes at most two lessons to `pipeline/lessons-learned.md` — a file that survives `/reset`. Every agent reads `lessons-learned.md` at the start of their work in future runs, so the team gets measurably better over time. Run `/retrospective` to trigger Stage 9 standalone on the current pipeline state.
+Stage 9 runs automatically after every deploy (success or failure). All agents — seven to eight depending on whether Stage 4.5b fired — each append a section to `pipeline/retrospective.md` covering what worked, what went wrong, where the pipeline slowed them, and one concrete lesson. The `security-engineer` contributes when it participated in the run. The Principal then synthesises and promotes at most two lessons to `pipeline/lessons-learned.md` — a file that survives `/reset`. Every agent reads `lessons-learned.md` at the start of their work in future runs, so the team gets measurably better over time. Run `/retrospective` to trigger Stage 9 standalone on the current pipeline state.
 
 **What is the runbook requirement at Stage 8?**
 
@@ -122,6 +122,27 @@ All three leave default behaviour unchanged when the config key is absent.
 **What are the four coding principles?**
 
 All build and review agents follow four principles adapted from Karpathy's observations on LLM coding: (1) **Think Before Coding** — record assumptions and surface ambiguities before the first edit; (2) **Simplicity First** — minimum code to satisfy the spec, no speculative features or abstractions; (3) **Surgical Changes** — touch only what the spec requires, note unrelated issues without fixing them; (4) **Goal-Driven Execution** — write a verifiable Plan before coding with a `verify:` check per step tied to an acceptance criterion. Reviewers apply the same rubric and may raise a BLOCKER for violations of any of the four.
+
+**Can I use the pipeline without Claude Code running?**
+
+Yes — `scripts/claude-team.js` is a Node CLI that mirrors every slash command
+as a subcommand, printing ready-to-paste Claude prompts in non-interactive mode.
+It also exposes automation helpers (`status`, `doctor`, `validate`, `next`,
+`autofold`, `roadmap`) that have no direct slash-command equivalent. Use it in
+CI pipelines, shell scripts, or wherever Claude Code is not running.
+
+Quick check: `npm run doctor` verifies that all framework files are present.
+`npm run parity:check` verifies commands, rules, skills, schemas, and helper
+scripts are complete and consistent.
+
+**What is the difference between `docs/*-template.md` and `templates/*-template.md`?**
+
+They serve different purposes and are both canonical:
+
+- `docs/brief-template.md`, `docs/design-spec-template.md`, `docs/runbook-template.md` — detailed reference documents with explanatory prose and example content. Used by agents as authoritative guidance for what a brief, spec, or runbook should contain.
+- `templates/brief-template.md`, etc. — minimal scaffolding stubs that `scripts/claude-team.js pipeline:scaffold` seeds into a new pipeline run. Intentionally thin; agents flesh them out.
+
+Do not merge or replace one set with the other — they complement each other.
 
 **Can I use the pipeline without the agents?**
 
@@ -173,7 +194,15 @@ Yes. The `docs/audit/` files are regular markdown committed to the repo. Multipl
 
 **How do I keep the framework updated?**
 
-Pull updates from `github.com/mumit/claude-dev-team` and re-run `bootstrap.sh`. The script overwrites `.claude/` and `AGENTS.md` with the latest framework files. Your `CLAUDE.md`, `pipeline/context.md`, `src/`, and all `*.local.*` files are never touched. Use `CLAUDE.md` or `CLAUDE.local.md` for project-specific instructions.
+Pull updates from `github.com/mumit/claude-dev-team` and re-run `bash bootstrap.sh`
+(or `node scripts/bootstrap.js`) against your project. The script overwrites `.claude/`
+and `AGENTS.md` with the latest framework files. Your `CLAUDE.md`,
+`pipeline/context.md`, `src/`, and all `*.local.*` files are never touched. Use
+`CLAUDE.md` or `CLAUDE.local.md` for project-specific instructions.
+
+After updating the framework repo itself, run `npm run doctor` to verify all
+expected files are present, and `npm run parity:check` for a deep consistency
+check.
 
 **What's the repo URL?**
 

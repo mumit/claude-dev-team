@@ -15,7 +15,7 @@ framework:
   # Tooling that needs the version at runtime should prefer
   # .claude/VERSION over this value, since the config file can be
   # edited by hand.
-  version: "2.5.0"
+  version: "2.6.0"
 
 deploy:
   # Which adapter Stage 8 uses.

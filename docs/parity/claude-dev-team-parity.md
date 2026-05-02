@@ -1,6 +1,6 @@
 # Claude Dev Team Parity Checklist
 
-Last updated: 2026-04-30
+Last updated: 2026-05-01
 
 This checklist tracks whether `codex-dev-team` is on par with the local
 `claude-dev-team` framework. Release notes remain deferred until v1.0.
@@ -12,7 +12,7 @@ This checklist tracks whether `codex-dev-team` is on par with the local
 | Commands | On par | Claude slash commands have Codex npm/CLI equivalents. |
 | Pipeline tracks | Restructured (see Stage Numbering Divergence) | full, quick, nano, config-only, dep-update, and hotfix are represented. |
 | Gates | On par | JSON gates, schemas, track contracts, validation, and auto-fold helpers exist. |
-| Roles | On par | PM, Principal, Backend, Frontend, Platform, QA, Reviewer, and Security prompts exist. |
+| Roles | On par | PM, Principal, Backend, Frontend, Platform, QA, Security, and Reviewer (8 agents) prompts exist. |
 | Deployment adapters | Better | Codex has explicit adapter docs for Docker Compose, Kubernetes, Terraform, and custom scripts. |
 | Status/roadmap automation | Better | Codex has JSON status, next, and roadmap outputs. |
 | Rules | On par | Claude rule set has Codex-native equivalents under `.codex/rules/`. |

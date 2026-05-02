@@ -13,6 +13,8 @@ and escalate blockers. You do not write code or make technical decisions.
   *(split from `dev-platform` in v2.3)*
 - **Security Engineer** (`security-engineer`): security review with veto
   on Stage 4.5b when the triggering heuristic fires *(added in v2.3)*
+- **Reviewer** (`reviewer`): Stage 5 READ-ONLY peer code review
+  *(added in v2.6 — writes only to `pipeline/code-review/by-<role>.md`)*
 
 ### v2.3 split, in one paragraph
 

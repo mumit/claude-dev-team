@@ -6,7 +6,7 @@ one-stop answer.
 
 | Concept | Lives in | Invoked by | Purpose |
 |---------|----------|------------|---------|
-| **Agent** | `.claude/agents/*.md` | The orchestrator (main session) spawns it via the `Agent` tool | A specialist (PM, Principal, dev-backend, dev-frontend, dev-platform) with a focused system prompt, its own tool allowlist, and — optionally — its own model. |
+| **Agent** | `.claude/agents/*.md` | The orchestrator (main session) spawns it via the `Agent` tool | A specialist (PM, Principal, dev-backend, dev-frontend, dev-platform, dev-qa, security-engineer, reviewer — 8 total) with a focused system prompt, its own tool allowlist, and — optionally — its own model. |
 | **Command** | `.claude/commands/*.md` | User types `/command-name` | A slash command. Drives a multi-step workflow from the user's side of the transcript (e.g. `/pipeline`, `/audit`, `/status`). |
 | **Skill** | `.claude/skills/<name>/SKILL.md` | An agent or the orchestrator reads and follows it | Reusable procedural knowledge or checklist (e.g. `implement`, `code-conventions`, `review-rubric`). Skills are instructions, not executors. |
 | **Rule** | `.claude/rules/*.md` | Loaded by the orchestrator at startup | Canonical, machine-and-human-readable definitions of pipeline stages, gate schema, escalation, and compaction behavior. Rules are what the orchestrator must obey. |
@@ -27,7 +27,7 @@ A typical `/pipeline` run touches all five:
    (`gate-validator.js`) which reads the newest gate file and exits
    non-zero if it's malformed or FAIL — halting the pipeline.
 5. After Stage 8 (Deploy), Stage 9 (Retrospective) runs automatically:
-   all agents (six to seven, depending on whether Stage 4.5b fired) contribute
+   all agents (seven to eight, depending on whether Stage 4.5b fired) contribute
    lessons to `pipeline/retrospective.md`, and the Principal promotes up to two
    to `pipeline/lessons-learned.md` so the next run starts smarter.
 

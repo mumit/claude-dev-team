@@ -6,22 +6,42 @@ framework orchestrator rules live in `.claude/rules/orchestrator.md`.
 
 ## What this repo is
 
-A framework/template packaging a simulated dev team (PM, Principal, 3 devs)
-plus slash commands, skills, gates, and hooks. Users install it into their
-projects via `bootstrap.sh`. There is no `src/` in this repo — `src/` is
-created inside target projects.
+A framework/template packaging a simulated dev team (PM, Principal, 5 devs,
+security engineer, and a dedicated peer reviewer — 8 agents total) plus slash
+commands, skills, gates, hooks, a Node CLI (`scripts/claude-team.js`), JSON
+schemas for every gate, and 11 pipeline artifact templates. Users install it into
+their projects via `bootstrap.sh` or `node scripts/bootstrap.js`. There is no
+`src/` in this repo — `src/` is created inside target projects.
 
 ## Commands
 
 | Purpose | Command |
 |---|---|
 | Install dev deps | `npm install` |
-| Run all tests | `npm test` |
+| Run all tests (265 tests) | `npm test` |
 | Run bootstrap integration tests | `npm run test:integration` |
 | Run frontmatter schema tests | `npm run lint:frontmatter` (alias: `npm run test:frontmatter`) |
 | Lint JS | `npm run lint` |
+| Verify framework health | `npm run doctor` |
+| Validate gate schemas | `npm run validate` |
+| Parity check | `npm run parity:check` |
 
 CI runs on Node 20 and 22. Bootstrap tests require `rsync` on PATH.
+
+## Key Directories
+
+| Path | Purpose |
+|---|---|
+| `.claude/agents/` | 8 agent definitions (PM, Principal, 5 devs, reviewer) |
+| `.claude/commands/` | 23 slash commands |
+| `.claude/skills/` | 6 skill definitions |
+| `.claude/rules/` | Pipeline, gate, escalation, coding-principles, retrospective, compaction, orchestrator |
+| `.claude/hooks/` | `gate-validator.js`, `approval-derivation.js` |
+| `scripts/` | `claude-team.js` CLI + 15 helper scripts |
+| `schemas/` | JSON Schema for every pipeline gate (10 files) |
+| `templates/` | Canonical pipeline artifact templates (11 files) |
+| `examples/tiny-app/` | Minimal Node project for dogfooding bootstrap |
+| `tests/` | 265 tests across unit, integration, frontmatter, and CLI suites |
 
 ## Conventions
 

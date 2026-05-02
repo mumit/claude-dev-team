@@ -1,12 +1,14 @@
 # Claude Dev Team
 
 A full simulated software development team running inside Claude Code.
-Includes a PM, Principal Engineer, and five specialist developers
-(backend, frontend, platform, QA, security-engineer) with peer code
-review, human checkpoints, deterministic gate validation, a hotfix
-path, lightweight tracks for small changes, pluggable deploy adapters,
-codebase auditing, a roadmap workflow, and a persistent retrospective
-that promotes lessons into future runs.
+Includes a PM, Principal Engineer, five specialist developers
+(backend, frontend, platform, QA, security-engineer), and a dedicated
+peer-reviewer agent, with peer code review, human checkpoints,
+deterministic gate validation, a hotfix path, lightweight tracks for
+small changes, pluggable deploy adapters, codebase auditing, a roadmap
+workflow, a persistent retrospective that promotes lessons into future
+runs, and a Node CLI (`scripts/claude-team.js`) for automation, CI
+integration, and non-Claude environments.
 
 **Current version**: see [`VERSION`](VERSION) (repo root) or
 `cat .claude/VERSION` in an installed project. Release history in
@@ -19,7 +21,7 @@ New here? Start with the **[user guide](docs/user-guide.md)** for a journey-base
 ## Prerequisites
 
 - Claude Code v2.1.32 or later (`claude --version`)
-- Node.js (for the gate-validator hook)
+- Node.js 20+ (for hooks, the gate-validator, and the CLI)
 - Git (worktrees used for parallel dev builds)
 
 ## First-time Setup
@@ -27,8 +29,9 @@ New here? Start with the **[user guide](docs/user-guide.md)** for a journey-base
 You can bootstrap a new project, or retrofit an existing one.
 
 ```bash
-# 1. Clone and bootstrap
+# 1. Clone and bootstrap (bash or Node — both are equivalent)
 cd /path/to/dev-team && bash bootstrap.sh /path/to/my-project
+# or: node scripts/bootstrap.js /path/to/my-project
 cd /path/to/my-project
 
 # 2. Add project-specific instructions
@@ -76,6 +79,63 @@ claude
 Track reference — when each fits, what they skip, and the safety stoplist —
 lives in [**docs/tracks.md**](docs/tracks.md). Use `/pipeline` when in doubt;
 the orchestrator will offer a lighter track if the change fits one.
+
+---
+
+## Automation CLI (v2.6+)
+
+`scripts/claude-team.js` is a Node CLI that mirrors every slash command, prints
+prompts for non-Claude environments, and adds automation helpers that slash
+commands can't provide.
+
+```bash
+# Status and diagnostics
+node scripts/claude-team.js status        # gate summary + run state
+node scripts/claude-team.js doctor        # verify framework files are in place
+node scripts/claude-team.js validate      # validate all gate files against schemas
+node scripts/claude-team.js next          # what stage should run next (and why)
+
+# Pipeline trigger (prints a ready-to-paste Claude prompt)
+node scripts/claude-team.js pipeline "Add user authentication"
+node scripts/claude-team.js quick  "Fix pagination cursor reset"
+node scripts/claude-team.js nano   "Fix typo in README"
+
+# Automation helpers
+node scripts/claude-team.js autofold      # fold Stage 7 when criteria are 1:1
+node scripts/claude-team.js roadmap       # roadmap status from pipeline/
+node scripts/claude-team.js lessons       # summarize lessons-learned.md
+node scripts/claude-team.js summary       # human-readable run summary
+node scripts/claude-team.js review        # derive Stage 5 approval gates
+node scripts/claude-team.js security      # run Stage 4.5b security heuristic
+node scripts/claude-team.js runbook       # check pipeline/runbook.md completeness
+
+# All commands also available as npm shims:
+npm run status | npm run doctor | npm run validate | npm run next
+```
+
+For the full command list: `node scripts/claude-team.js help` or `npm run help`.
+
+Slash commands remain the authoritative workflow inside an active Claude Code
+session. The CLI is the integration layer for CI, scripting, and environments
+where Claude Code is not running.
+
+---
+
+## Project Layout (automation surface)
+
+In addition to the `.claude/` tree installed into target projects, this repo
+ships:
+
+| Path | Purpose |
+|---|---|
+| `scripts/claude-team.js` | Main CLI dispatcher (16 helper modules) |
+| `scripts/*.js` | Helper scripts: status, gate-validator, approval-derivation, security-heuristic, runbook-check, parity-check, release, pr-pack, consistency, audit, lessons, roadmap, summary, lint-syntax, bootstrap |
+| `schemas/*.schema.json` | JSON Schema files for every pipeline gate (stage-01 through stage-09, plus `gate.schema.json`) |
+| `templates/*.md` | Canonical pipeline artifact templates (brief, design-spec, runbook, adr, review, etc.) |
+| `examples/tiny-app/` | Minimal Node project for dogfooding bootstrap and pipeline commands |
+
+See [docs/concepts.md](docs/concepts.md) for the five building blocks, and
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to add commands, agents, and skills.
 
 ---
 
@@ -203,7 +263,8 @@ your-project/
 │   │   ├── dev-frontend.md            # Frontend dev — UI, client
 │   │   ├── dev-platform.md            # Platform dev — CI, infra, deploy, pre-review
 │   │   ├── dev-qa.md                  # QA dev — test authoring + Stage 6 (v2.3+)
-│   │   └── security-engineer.md       # Security — threat model + veto (v2.3+)
+│   │   ├── security-engineer.md       # Security — threat model + veto (v2.3+)
+│   │   └── reviewer.md                # Peer reviewer — Stage 5 READ-ONLY review (v2.6+)
 │   ├── adapters/                      # Stage 8 deploy adapters (v2.4+)
 │   │   ├── docker-compose.md          # Default adapter
 │   │   ├── kubernetes.md
@@ -280,6 +341,7 @@ your-project/
 | dev-platform | sonnet | Execution: infra, deploy, review, pre-review checks |
 | dev-qa | sonnet | Execution: test authoring + Stage 6 run *(v2.3+)* |
 | security-engineer | opus | Judgment: threat modelling, veto on security-relevant diffs *(v2.3+)* |
+| reviewer | sonnet | Execution: Stage 5 READ-ONLY peer review *(v2.6+)* |
 
 ---
 

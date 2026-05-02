@@ -11,9 +11,9 @@ is a human-readable summary and a compatibility shim for other tools.
 
 ## Team Overview
 
-This project uses a simulated software development team. All features go
-through a structured 9-stage pipeline: Requirements → Design → Build →
-Review → Test → Deploy → Retrospective. Agents are not general-purpose
+This project uses a simulated software development team of **eight agents**.
+All features go through a structured 9-stage pipeline: Requirements → Design
+→ Build → Review → Test → Deploy → Retrospective. Agents are not general-purpose
 assistants — each has a specific role, tool access, and domain ownership.
 
 ---
@@ -171,6 +171,28 @@ approvals. Does NOT write or edit source.
 
 ---
 
+## reviewer
+
+**Role**: Peer Reviewer  
+**Domain**: Stage 5 cross-area code review (READ-ONLY)  
+**Model**: Claude Sonnet  
+**Tools**: Read, Write (pipeline/code-review/ only), Glob, Grep  
+**Added**: v2.6 (promoted from dev-* agents' built-in review pass)  
+
+Provides peer code review for implementation work across role-owned areas.
+During a Stage 5 review invocation, reviewer is READ-ONLY: it writes only to
+`pipeline/code-review/by-<role>.md`. Does not edit source files. The
+`approval-derivation.js` hook derives stage-05 gates from review files
+automatically — reviewer never writes gates directly.
+
+**Invoked for**:
+- Stage 5 peer code review in matrix mode (two reviewers, two areas each) or
+  scoped mode (one reviewer, one area)
+- Stage 9a retrospective contribution, focused on cross-area coupling and
+  spec-drift observations
+
+---
+
 ## Commands and Skills
 
 ### Pipeline Commands
@@ -209,6 +231,30 @@ approvals. Does NOT write or edit source.
 |---|---|---|
 | `implement` | "implement [item]", "work on [item]", "next item from roadmap" | Plan → execute → verify for focused changes |
 | `pre-pr-review` | "review my changes", "check before I merge", "pre-PR review" | Pre-merge code review for non-pipeline work |
+
+---
+
+### Automation CLI (v2.6+)
+
+`scripts/claude-team.js` mirrors all slash commands as CLI subcommands and adds
+automation helpers. Use it in CI, scripts, or environments where Claude Code is
+not running.
+
+| npm shim | CLI subcommand | What it does |
+|---|---|---|
+| `npm run status` | `claude-team status` | Gate summary and run state |
+| `npm run doctor` | `claude-team doctor` | Verify framework files are present |
+| `npm run validate` | `claude-team validate` | Validate all gate files against schemas |
+| `npm run next` | `claude-team next` | Print the next recommended stage |
+| `npm run roadmap` | `claude-team roadmap` | Roadmap status from `pipeline/` |
+| `npm run autofold` | `claude-team autofold` | Fold Stage 7 when criteria are 1:1 |
+| `npm run review:derive` | `claude-team review` | Derive Stage 5 approval gates |
+| `npm run security:check` | `claude-team security` | Run Stage 4.5b security heuristic |
+| `npm run runbook:check` | `claude-team runbook` | Check runbook completeness |
+| `npm run pipeline -- "<feature>"` | `claude-team pipeline "<feature>"` | Print pipeline prompt |
+| `npm run quick -- "<change>"` | `claude-team quick "<change>"` | Print quick-track prompt |
+
+Full list: `node scripts/claude-team.js help`
 
 ---
 

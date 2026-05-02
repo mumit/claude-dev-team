@@ -28,6 +28,7 @@ section below.
 | `v2.3.0` | `dev-qa` split from `dev-platform` + security-engineer agent + pre-review gate | Breaks agent catalogue and permissions |
 | `v2.4.0` | Deployment-adapter seam + runbook requirement | Breaks Stage 8 default (docker-compose no longer assumed) |
 | `v2.5.0` | Budget gate + cross-run retro + lesson age-out + `PATTERN` channel | Opt-in features, non-breaking |
+| `v2.6.0` | Automation layer: CLI, schemas, templates, reviewer agent | Non-breaking; purely additive |
 
 Consumers can take releases individually. Each minor release has its own
 migration steps at the bottom of this document.
@@ -406,9 +407,37 @@ All v2.5 additions are opt-in or additive:
 
 ---
 
+## v2.6.0 — Automation layer (additive, non-breaking)
+
+v2.6 adds `scripts/claude-team.js`, 15 helper scripts, JSON schemas, artifact
+templates, `examples/tiny-app`, and a dedicated `reviewer` agent. No pipeline
+stage semantics, gate schemas, or adapter contracts changed.
+
+### What breaks
+
+Nothing. All additions are opt-in or purely additive.
+
+### Steps
+
+1. **Re-run bootstrap.** `reviewer.md` lands under `.claude/agents/`. If you
+   customised the dev-* agent review sections, those still work unchanged — the
+   reviewer agent is an alternative, not a replacement.
+2. **Install npm deps** (`npm install`) if you want to run the CLI or validation
+   scripts from the repo root.
+3. **Optional:** run `npm run doctor` to verify all framework files are present,
+   and `npm run parity:check` for a deep consistency check.
+
+### Rollback
+
+Delete `scripts/`, `schemas/`, `templates/`, `examples/`, and
+`.claude/agents/reviewer.md`. No gate files or pipeline state is affected.
+
+---
+
 ## v2.x complete
 
-v2.5 is the final release in the v2.x line. The full v2 stack:
+v2.5 was the final release in the v2.x core pipeline line. v2.6 adds the
+automation surface on top. The full v2 stack:
 
 1. v2.0 — tracks and routing
 2. v2.1 — gate-validator hardening
@@ -417,16 +446,18 @@ v2.5 is the final release in the v2.x line. The full v2 stack:
 5. v2.3.1 — scoped review + approval-derivation hook
 6. v2.4 — deploy adapters + runbook
 7. v2.5 — budget + learning loop
+8. v2.6 — automation layer (CLI, schemas, templates, reviewer agent)
 
-Beyond v2.5, future work likely includes: cross-run meta-retro,
-parallel-aware context compaction, adapter-specific runbook
-templates, and expanded security-engineer heuristics. No committed
-v3 schedule.
+No committed v3 schedule. A major-version bump is reserved for a philosophical
+shift in pipeline operation — the automation layer is additive, not a
+replacement.
 
 ## Getting help
 
 - Routing questions: `docs/tracks.md`
 - Stage definitions: `.claude/rules/pipeline.md`
-- Gate schema: `.claude/rules/gates.md`
+- Gate schema: `.claude/rules/gates.md` and `schemas/*.schema.json`
+- CLI commands: `node scripts/claude-team.js help` or `npm run help`
+- Framework health: `npm run doctor` and `npm run parity:check`
 - Known limitations and open issues: the `Unreleased` section of
   `CHANGELOG.md`
