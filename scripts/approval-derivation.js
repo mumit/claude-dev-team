@@ -66,6 +66,18 @@ const REVIEW_DIR = path.join(CWD, "pipeline", "code-review");
 const GATES_DIR = path.join(CWD, "pipeline", "gates");
 
 // Lock tuning
+//
+// Two reviewers writing concurrently is the contended path; a typical
+// gate write completes in well under 30 ms, so a single retry is usually
+// enough. The budget below gives 20 × 30 ms = 600 ms of total wait
+// before bail — long enough that a contending hook almost always wins
+// eventually (hook cold-start alone is ~50 ms, and the gate write is
+// fast), but short enough that an actually-stuck hook surfaces quickly
+// rather than blocking the user's session for several seconds.
+//
+// LOCK_STALE_MS is intentionally longer than the busy-wait window so a
+// normally-contending writer doesn't trigger stale-lock recovery on a
+// peer that is simply mid-write.
 const LOCK_RETRIES = 20;
 const LOCK_DELAY_MS = 30;
 const LOCK_STALE_MS = 5000; // clear locks held for > 5 s (crashed process)

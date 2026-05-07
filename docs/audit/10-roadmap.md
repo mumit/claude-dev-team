@@ -35,7 +35,7 @@ zero runtime risk.
 | 7 | **B-5 [DONE]** `templates/README.md` | Eleven one-liners. |
 | 8 | **B-6 [DONE]** `.claude/hooks/README.md` | Documents hook event contract. |
 | 9 | **B-7 [DONE]** README "First 30 minutes" + EXAMPLE.md link + adapter one-liner | Closes the three onboarding frictions in one PR. |
-| 10 | **B-8** Lock-tuning rationale comments | Comment-only edit. |
+| 10 | **B-8 [DONE]** Lock-tuning rationale comments | Comment-only edit. |
 
 Parallelisable: yes — independent files. Verification: `npm run
 lint:frontmatter`; eyeball the rendered docs. Total effort: ~3–4 hours.
