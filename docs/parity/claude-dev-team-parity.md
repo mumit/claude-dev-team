@@ -1,9 +1,41 @@
 # Claude Dev Team Parity Checklist
 
-Last updated: 2026-05-01
+Last updated: 2026-05-07 (audit-driven hardening run; see
+`docs/audit/10-roadmap.md` for context)
 
 This checklist tracks whether `codex-dev-team` is on par with the local
 `claude-dev-team` framework. Release notes remain deferred until v1.0.
+
+## Audit-driven divergences (2026-05-07)
+
+The audit refresh closed 27 roadmap items and several of them moved
+claude *ahead* of codex on the parity ledger. Codex may want to adopt
+each via its own audit cycle:
+
+| Topic | Claude state | Codex state | Audit ref |
+|---|---|---|---|
+| Stoplist enforcement | Programmatic in `claude-team.js` (refuses lighter tracks on regex match; `--force` to bypass) | Honour-system | B-13 |
+| File-size cap on hook reads | 1 MB cap in both hooks (`MAX_GATE_BYTES`, `MAX_FILE_BYTES`) | None | B-16 |
+| `gate-validator` filesystem error branching | Halt-class fs codes (EACCES/EPERM/ENOTDIR/EISDIR/EROFS) exit 1; runtime errors still warn-and-continue | Treats all errors as PASS | B-3 |
+| `LOG_FORMAT=json` structured-event mode | Both hooks emit one JSON event per terminal exit | Prose only | B-23 |
+| `pipeline.md` layout | Split into `pipeline-tracks.md` + `pipeline-core.md` + `pipeline-build.md`; `pipeline.md` is index | Single file | B-21 |
+| `release.js check` config drift | Verifies `framework.version` in `.claude/config.yml` against `VERSION` | VERSION + package.json + lockfile only | B-19 |
+| Hook command root resolution | Three-tier fallback `${CLAUDE_PROJECT_DIR:-$(git rev-parse 2>/dev/null || pwd)}` | `git rev-parse` only — fails in non-git checkouts | B-20 |
+| `Bash(curl *)` permission scope | Localhost-only allow-list (http/https, with/without leading flags) | Broader allow | B-2 |
+| Hook byte-parity test | `tests/hook-parity.test.js` pins `.claude/hooks` ↔ `scripts` SHA-256 equal | None | B-1 |
+| Slash↔CLI cross-check | `tests/slash-cli-parity.test.js` enforces 1:1 with documented `CLI_ONLY` allow-list | None | B-9 |
+| Adapter contract test | Six required H2 sections per adapter file | Existence check only | B-18 |
+| Cross-validator behavioural parity | `tests/codex-parity.test.js` runs both validators against the same fixtures | N/A — symmetric concern, lives here | B-25 |
+
+The cross-validator parity test (`tests/codex-parity.test.js`) skips
+when codex-dev-team is not co-located, but on developer machines where
+both repos are siblings it asserts both `gate-validator.js` scripts
+agree on shared input. See B-25.
+
+Two scripts ported *from* codex *into* claude in this audit (no longer
+codex-only): `scripts/budget.js` (B-11) and `scripts/visualize.js`
+(B-12). Both are now wired as `claude-team budget` / `claude-team
+visualize` with parity tests.
 
 ## Summary
 
