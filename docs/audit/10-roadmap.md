@@ -18,7 +18,7 @@ tighten the obviously-loose security knob.
 | 1 | **B-1 [DONE]** Hook parity test | 10-line test that prevents the most likely future bug class. Trivially safe. |
 | 2 | **B-3 [DONE]** `gate-validator` error-class branching | Silent PASS on EACCES is the only place a real bug could hide; cheap to fix. |
 | 3 | **B-2 [DONE]** Tighten `Bash(curl *)` allow-list | Single-line edit to `settings.json`. Reduces exfil surface to near-zero. |
-| 4 | **B-19** Release-version consistency test | One assertion guarding all future releases. Trivial. |
+| 4 | **B-19 [DONE]** Release-version consistency test | One assertion guarding all future releases. Trivial. |
 | 5 | **B-10** Extract `tests/_framework-contract.js` | Removes a duplication that's already biting in two test files. |
 
 Parallelisable: yes — five independent commits, no shared file edits.

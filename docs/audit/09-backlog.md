@@ -86,7 +86,7 @@ None. The audit found no critical issues.
 | **B-16** | Cap `JSON.parse` input on gate files to 1 MB to bound memory | Theme 3 | XS | Low — defence in depth | MEDIUM |
 | **B-17** | Replace `claude-team.js` if-chain dispatch with object-map dispatch | Theme 1 | S | Low — maintainability and drift safety | HIGH |
 | **B-18** | Adapter-contract test: parse each `.claude/adapters/*.md` for required H2 sections | Theme 5 | S | Low — closes T-05 | MEDIUM |
-| **B-19** | Release-version consistency test (`VERSION`, `package.json`, configs) | Theme 5 | XS | Low — closes Q-T-4 | HIGH |
+| **B-19 [DONE]** | Release-version consistency test (`VERSION`, `package.json`, configs) | Theme 5 | XS | Low — closes Q-T-4 | HIGH |
 | **B-20** | Document hook command's `git rev-parse` requirement and add fallback so `.git`-less checkouts still work | Theme 3 | S | Low — only matters if a user works outside git | MEDIUM |
 
 ### P3 — Strategic investments (larger effort, long horizon)

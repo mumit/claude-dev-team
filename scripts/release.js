@@ -13,6 +13,19 @@ function exists(relativePath) {
   return fs.existsSync(path.join(ROOT, relativePath));
 }
 
+// Extract framework.version from .claude/config.yml without taking a YAML
+// dependency. Matches a `version: "X.Y.Z"` line that appears under the
+// top-level `framework:` block. Returns null if the file or key is missing.
+function readConfigYmlVersion() {
+  const configPath = path.join(ROOT, ".claude", "config.yml");
+  if (!fs.existsSync(configPath)) return null;
+  const yml = fs.readFileSync(configPath, "utf8");
+  const m = yml.match(
+    /^framework:\s*\n(?:[^\n]*\n)*?\s*version:\s*"([^"]+)"/m,
+  );
+  return m ? m[1] : null;
+}
+
 function releaseChecks() {
   const version = fs.readFileSync(path.join(ROOT, "VERSION"), "utf8").trim();
   const pkg = readJson("package.json");
@@ -23,6 +36,15 @@ function releaseChecks() {
   if (lock.version !== version) errors.push(`package-lock.json version ${lock.version} does not match VERSION ${version}`);
   if (lock.packages?.[""]?.version !== version) {
     errors.push(`package-lock root package version ${lock.packages?.[""]?.version} does not match VERSION ${version}`);
+  }
+
+  const configVersion = readConfigYmlVersion();
+  if (configVersion === null) {
+    errors.push(`.claude/config.yml is missing framework.version`);
+  } else if (configVersion !== version) {
+    errors.push(
+      `.claude/config.yml framework.version ${configVersion} does not match VERSION ${version}`,
+    );
   }
 
   for (const script of [

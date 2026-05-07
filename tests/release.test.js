@@ -196,6 +196,27 @@ describe("release helper", () => {
     assert.match(result.stderr, /package\.json version 9\.9\.9/);
   });
 
+  it("fails when .claude/config.yml framework.version drifts", () => {
+    const configPath = path.join(target, ".claude", "config.yml");
+    const yml = fs.readFileSync(configPath, "utf8");
+    fs.writeFileSync(configPath, yml.replace(/version: "1\.2\.3"/, 'version: "9.9.9"'));
+
+    const result = run(["check"]);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /\.claude\/config\.yml framework\.version 9\.9\.9/);
+  });
+
+  it("fails when .claude/config.yml is missing framework.version", () => {
+    const configPath = path.join(target, ".claude", "config.yml");
+    fs.writeFileSync(configPath, "deploy:\n  adapter: docker-compose\n");
+
+    const result = run(["check"]);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /\.claude\/config\.yml is missing framework\.version/);
+  });
+
   it("fails when required CLI scripts are missing", () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(target, "package.json"), "utf8"));
     delete pkg.scripts.next;
