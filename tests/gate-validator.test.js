@@ -255,18 +255,40 @@ describe("gate-validator.js", () => {
 
   // ── Internal error handling ─────────────────────────────
 
-  it("exits 0 with a WARN message on unexpected internal error", () => {
-    // Simulate an unexpected filesystem error by making pipeline/gates a
-    // regular file instead of a directory. fs.existsSync returns true, but
-    // fs.readdirSync then throws ENOTDIR — which must NOT halt the pipeline.
+  it("exits 1 when pipeline/gates is a regular file (ENOTDIR)", () => {
+    // A real filesystem misconfiguration must halt the pipeline. Earlier
+    // versions of the validator swallowed this as PASS — see audit B-3.
     const pipelineDir = path.join(tmpDir, "pipeline");
     fs.mkdirSync(pipelineDir, { recursive: true });
     fs.writeFileSync(path.join(pipelineDir, "gates"), "not a directory");
 
     const result = run(tmpDir);
-    assert.equal(result.status, 0);
-    assert.match(result.stdout, /internal error/);
-    assert.match(result.stdout, /treating as PASS/);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /filesystem error \(ENOTDIR\)/);
+  });
+
+  it("exits 1 when pipeline/gates is unreadable (EACCES)", (t) => {
+    const isRoot =
+      typeof process.getuid === "function" && process.getuid() === 0;
+    if (process.platform === "win32" || isRoot) {
+      t.skip("chmod cannot deny read on this platform/user");
+      return;
+    }
+
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    fs.chmodSync(gatesDir, 0o000);
+
+    let result;
+    try {
+      result = run(tmpDir);
+    } finally {
+      // Restore mode so afterEach() can recursively remove tmpDir.
+      fs.chmodSync(gatesDir, 0o755);
+    }
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /filesystem error \(EACCES\)/);
   });
 
   // ── v2.1: bypassed escalation detection ─────────────────
