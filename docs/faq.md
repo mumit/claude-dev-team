@@ -127,9 +127,16 @@ All build and review agents follow four principles adapted from Karpathy's obser
 
 Yes — `scripts/claude-team.js` is a Node CLI that mirrors every slash command
 as a subcommand, printing ready-to-paste Claude prompts in non-interactive mode.
-It also exposes automation helpers (`status`, `doctor`, `validate`, `next`,
-`autofold`, `roadmap`) that have no direct slash-command equivalent. Use it in
-CI pipelines, shell scripts, or wherever Claude Code is not running.
+It also exposes automation helpers that have no slash-command equivalent —
+diagnostics (`status`, `next`, `doctor`, `validate`, `summary`, `roadmap`,
+`lessons`, `autofold`) and runners for individual hooks/scripts (`review`,
+`security`, `runbook`, `budget`, `visualize`, `checkpoint`). Use it in CI
+pipelines, shell scripts, or wherever Claude Code is not running.
+
+Both hooks (`gate-validator`, `approval-derivation`) emit one structured
+JSON event line per terminal exit when `LOG_FORMAT=json` is set in the
+environment — useful when an external orchestrator needs to consume hook
+results without parsing prose.
 
 Quick check: `npm run doctor` verifies that all framework files are present.
 `npm run parity:check` verifies commands, rules, skills, schemas, and helper

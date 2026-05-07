@@ -31,10 +31,15 @@ The four lighter tracks (`/nano`, `/quick`, `/config-only`, `/dep-update`) must
 - Feature-flag **introduction** (toggling existing flags is fine in `/config-only`)
 - New external **dependencies** (upgrades are fine in `/dep-update`)
 
-The orchestrator enforces this at routing time by asking the user to
-confirm the change doesn't cross any stoplist item. If it does, the
-request is routed to `/pipeline`, which is where security, architectural,
-and migration review belong.
+Enforcement is **programmatic** since the 2026-05-07 audit (B-13):
+`scripts/claude-team.js` runs a regex check against the change
+description and any `git diff --name-only HEAD` paths before scaffolding
+any lighter-track run. On a match it exits non-zero with a clear
+message naming the matched category and points the user at
+`/pipeline`. False positives can be bypassed by appending `--force`
+to the CLI invocation; the override is recorded in `pipeline/context.md`
+for later audit. The patterns live in `scripts/stoplist.js` and the
+canonical list is in `.claude/rules/pipeline-tracks.md` §Stage 0.
 
 `/hotfix` is exempt from the stoplist because production incidents can
 and do touch those areas — but `/hotfix` requires a named blast-radius

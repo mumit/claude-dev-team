@@ -595,7 +595,10 @@ budget:
 
 Tracks token usage and wall-clock time per stage. On exceed: `escalate` halts
 with a decision prompt; `warn` logs the breach and continues. Useful for
-calibration runs.
+calibration runs. Drive it via `npm run budget -- init` once at run start,
+then `npm run budget -- update <stage> <tokens> <minutes>` at each stage
+boundary; `npm run budget -- check` evaluates the running totals. All
+subcommands no-op when `budget.enabled` is false.
 
 ### Auto-pass checkpoints
 
@@ -609,7 +612,11 @@ checkpoints:
 
 Supported conditions: `no_warnings`, `all_criteria_passed` (Checkpoint C only).
 Never auto-pass security-sensitive work — the Safety Stoplist and Stage 4.5b veto
-are hard guards that auto-pass does not override.
+are hard guards that auto-pass does not override. Drive it via
+`node scripts/claude-team.js checkpoint <stage>` after a stage gate
+passes; the script returns `auto-passed`, `waiting`, `suppressed`, or
+`not-a-checkpoint` and appends a record to `pipeline/context.md` on
+auto-pass.
 
 ### PATTERN review tags
 
