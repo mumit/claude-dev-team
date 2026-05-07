@@ -99,7 +99,7 @@ None. The audit found no critical issues.
 | **B-24** | Consider porting Codex's async-checkpoint conditional auto-pass to claude-dev-team | Theme 2 | M | Low — claude has the config plumbing already; impl missing | MEDIUM |
 | **B-25** | Expand parity-check.js to include behavioural assertions (not just file presence) | Theme 1 | M | Medium — current parity check is shallow | MEDIUM |
 | **B-26** | Move `docs/build-presentation.js` to `scripts/`, give it real unit tests | Theme 5 | M | Low — keeps docs/ a doc dir | LOW |
-| **B-27** | Add an ADR documenting the bilateral coupling between `pipeline.md` and agent prompts (Q-08) | Theme 1 | XS | Low — defensive doc | LOW |
+| **B-27 [DONE]** | Add an ADR documenting the bilateral coupling between `pipeline.md` and agent prompts (Q-08) | Theme 1 | XS | Low — defensive doc | LOW |
 
 ### Parked (intentionally not doing)
 

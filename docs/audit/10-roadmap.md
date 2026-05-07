@@ -86,8 +86,8 @@ could be better.
 - **B-26** Move `docs/build-presentation.js` into `scripts/`. Pure
   cleanliness; doesn't fix a bug. Park unless contributors keep getting
   confused by its location.
-- **B-27** ADR for the bilateral coupling between `pipeline.md` and
-  agent prompts.
+- **B-27 [DONE]** ADR for the bilateral coupling between `pipeline.md` and
+  agent prompts (`docs/adr/0001-pipeline-agent-bilateral-coupling.md`).
 
 ## Verification gates per batch
 
