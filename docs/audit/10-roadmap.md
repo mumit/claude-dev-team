@@ -72,8 +72,8 @@ could be better.
   B-11 land so the new files reflect the latest stage list. Mini-
   proposal: each agent's frontmatter declares which subset it loads;
   `tests/contract.test.js` checks the union covers all stages.
-- **B-22** Async setTimeout-based lock retry. Keep on the back-burner;
-  current busy-spin is invisible at present scale.
+- **B-22 [DONE]** Replace busy-spin lock retry with `Atomics.wait` —
+  synchronous, no CPU burn, callers unchanged.
 - **B-23** Structured log mode for hooks. Driven by demand from any
   external orchestrator integration.
 - **B-24** Async-checkpoint conditional auto-pass. The config plumbing
