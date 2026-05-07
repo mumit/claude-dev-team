@@ -53,7 +53,7 @@ missing tests.
 | 14 | **B-15 [DONE]** Table-driven test for `security-heuristic.js` | One file, ~50 LOC; closes T-02. |
 | 15 | **B-9** Slash↔CLI cross-check test | Closes the third drift vector (after B-1 and parity-check.js). |
 | 16 | **B-18** Adapter-contract test | Cheap insurance for Stage 8 changes. |
-| 17 | **B-17** Refactor `claude-team.js` dispatch to object map | Pairs naturally with B-9 since both touch the dispatch table. |
+| 17 | **B-17 [DONE]** Refactor `claude-team.js` dispatch to object map | Pairs naturally with B-9 since both touch the dispatch table. |
 | 18 | **B-12** Port `scripts/visualize.js` from codex-dev-team | Optional QoL, can ship any time. |
 | 19 | **B-16** Cap JSON parse size in gate readers | Defence in depth. |
 | 20 | **B-20** Hook command `git rev-parse` fallback | Niche but cheap. |
