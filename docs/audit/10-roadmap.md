@@ -56,7 +56,7 @@ missing tests.
 | 17 | **B-17 [DONE]** Refactor `claude-team.js` dispatch to object map | Pairs naturally with B-9 since both touch the dispatch table. |
 | 18 | **B-12 [DONE]** Port `scripts/visualize.js` from codex-dev-team | Optional QoL, can ship any time. |
 | 19 | **B-16 [DONE]** Cap JSON parse size in gate readers | Defence in depth. |
-| 20 | **B-20** Hook command `git rev-parse` fallback | Niche but cheap. |
+| 20 | **B-20 [DONE]** Hook command `git rev-parse` fallback | Niche but cheap. |
 
 Parallelisable: B-11/B-12 can ship together (both port from codex).
 B-13–B-15 are independent. B-17 should land before B-9 to share the

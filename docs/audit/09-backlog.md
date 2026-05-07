@@ -87,7 +87,7 @@ None. The audit found no critical issues.
 | **B-17 [DONE]** | Replace `claude-team.js` if-chain dispatch with object-map dispatch | Theme 1 | S | Low — maintainability and drift safety | HIGH |
 | **B-18 [DONE]** | Adapter-contract test: parse each `.claude/adapters/*.md` for required H2 sections | Theme 5 | S | Low — closes T-05 | MEDIUM |
 | **B-19 [DONE]** | Release-version consistency test (`VERSION`, `package.json`, configs) | Theme 5 | XS | Low — closes Q-T-4 | HIGH |
-| **B-20** | Document hook command's `git rev-parse` requirement and add fallback so `.git`-less checkouts still work | Theme 3 | S | Low — only matters if a user works outside git | MEDIUM |
+| **B-20 [DONE]** | Document hook command's `git rev-parse` requirement and add fallback so `.git`-less checkouts still work | Theme 3 | S | Low — only matters if a user works outside git | MEDIUM |
 
 ### P3 — Strategic investments (larger effort, long horizon)
 

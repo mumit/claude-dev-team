@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'node \"$(git rev-parse --show-toplevel)/.claude/hooks/approval-derivation.js\"'"
+            "command": "bash -c 'node \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/approval-derivation.js\"'"
           }
         ]
       }
@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'node \"$(git rev-parse --show-toplevel)/.claude/hooks/gate-validator.js\"'"
+            "command": "bash -c 'node \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/gate-validator.js\"'"
           }
         ]
       }
@@ -70,7 +70,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'node \"$(git rev-parse --show-toplevel)/.claude/hooks/gate-validator.js\"'"
+            "command": "bash -c 'node \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/gate-validator.js\"'"
           }
         ]
       }

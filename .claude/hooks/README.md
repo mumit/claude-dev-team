@@ -38,23 +38,31 @@ directory being the project root (Claude Code guarantees this).
       "hooks": [
         {
           "type": "command",
-          "command": "bash -c 'node \"$(git rev-parse --show-toplevel)/.claude/hooks/approval-derivation.js\"'"
+          "command": "bash -c 'node \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/approval-derivation.js\"'"
         }
       ]
     }
   ],
   "SubagentStop": [
-    { "hooks": [{ "type": "command", "command": "bash -c 'node \"$(git rev-parse --show-toplevel)/.claude/hooks/gate-validator.js\"'" }] }
+    { "hooks": [{ "type": "command", "command": "bash -c 'node \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/gate-validator.js\"'" }] }
   ],
   "Stop": [
-    { "hooks": [{ "type": "command", "command": "bash -c 'node \"$(git rev-parse --show-toplevel)/.claude/hooks/gate-validator.js\"'" }] }
+    { "hooks": [{ "type": "command", "command": "bash -c 'node \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/.claude/hooks/gate-validator.js\"'" }] }
   ]
 }
 ```
 
-The `git rev-parse --show-toplevel` shim keeps the path correct when
-the user runs Claude Code from a sub-directory; if the project is not
-in a git repo the hook will fail to start.
+Each hook command resolves the project root via a three-tier fallback:
+
+1. `$CLAUDE_PROJECT_DIR` — preferred. Claude Code sets this for hooks.
+2. `git rev-parse --show-toplevel` — works when the user ran Claude Code
+   from a sub-directory of a git repo (stderr is swallowed so the
+   fallback chain stays silent).
+3. `pwd` — last resort. Assumes the hook's cwd is the project root,
+   which is true when Claude Code is invoked at the project root.
+
+This means hooks start cleanly even in projects that are not git repos —
+a `.git`-less checkout no longer silently breaks the hook.
 
 ## `approval-derivation.js` (PostToolUse)
 
