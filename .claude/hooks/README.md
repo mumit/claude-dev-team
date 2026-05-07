@@ -88,6 +88,26 @@ non-review-file path exits in <10 ms after stdin parse.
 `[approval-derivation] WARN …` so the user sees them, but the hook
 does not halt a session.
 
+**Structured logs (opt-in):** export `LOG_FORMAT=json` and the hook
+emits one JSON event line per gate update on stdout, in addition to
+the human prose. Schema:
+
+```json
+{
+  "ts": "2026-05-07T12:00:00.000Z",
+  "hook": "approval-derivation",
+  "event": "gate_updated",
+  "area": "backend",
+  "reviewer": "dev-frontend",
+  "verdict": "APPROVED",
+  "status": "PASS",
+  "approvals": ["dev-frontend", "dev-platform"],
+  "approvals_count": 2,
+  "required_approvals": 2,
+  "changes_requested_count": 0
+}
+```
+
 ## `gate-validator.js` (Stop, SubagentStop)
 
 **Trigger:** every agent boundary. Validates the most recent gate
@@ -115,6 +135,13 @@ escalations.
 A non-fs runtime error inside the validator itself logs a warning and
 exits 0, on the principle that a hook bug should not halt every user
 session. Filesystem errors *do* halt — see audit finding B-3 / S-03.
+
+**Structured logs (opt-in):** export `LOG_FORMAT=json` and the hook
+emits one JSON event line on its terminal exit. Events: `gate_pass`,
+`gate_fail`, `gate_escalate`, `bypassed_escalation`. Each carries
+`ts`, `hook: "gate-validator"`, the gate's `stage` and `agent`, the
+gate filename, and event-specific fields (warnings, blockers,
+escalation reason, etc.).
 
 ## Adding a new hook
 

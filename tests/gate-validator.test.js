@@ -316,6 +316,48 @@ describe("gate-validator.js", () => {
     assert.match(result.stderr, /filesystem error \(EACCES\)/);
   });
 
+  // ── B-23: structured-log mode ────────────────────────────────────────
+
+  it("emits one JSON event line on PASS when LOG_FORMAT=json", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-01.json", gate());
+
+    let result;
+    try {
+      const stdout = execFileSync("node", [VALIDATOR], {
+        cwd: tmpDir,
+        encoding: "utf8",
+        env: { ...process.env, LOG_FORMAT: "json" },
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      result = { status: 0, stdout, stderr: "" };
+    } catch (err) {
+      result = { status: err.status, stdout: err.stdout || "", stderr: err.stderr || "" };
+    }
+
+    assert.equal(result.status, 0);
+    const jsonLine = result.stdout.split("\n").find((l) => l.startsWith("{"));
+    assert.ok(jsonLine, `expected a JSON event line in stdout:\n${result.stdout}`);
+    const event = JSON.parse(jsonLine);
+    assert.equal(event.hook, "gate-validator");
+    assert.equal(event.event, "gate_pass");
+    assert.equal(event.stage, "stage-01");
+    assert.equal(event.agent, "pm");
+    assert.match(event.ts, /^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("emits no JSON when LOG_FORMAT is unset (default)", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    writeGate(gatesDir, "stage-01.json", gate());
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    const jsonLines = result.stdout.split("\n").filter((l) => l.trim().startsWith("{"));
+    assert.equal(jsonLines.length, 0, "no JSON lines should appear without LOG_FORMAT=json");
+  });
+
   // ── v2.1: bypassed escalation detection ─────────────────
 
   it("exits 3 when an older gate is ESCALATE and a newer gate exists", () => {

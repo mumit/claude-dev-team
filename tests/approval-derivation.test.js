@@ -485,6 +485,50 @@ describe("approval-derivation.js", () => {
     assert.equal(fs.statSync(gatePath).size, beforeBytes);
   });
 
+  // ── B-23: structured-log mode ────────────────────────────────────────
+
+  it("emits one JSON event line per gate update when LOG_FORMAT=json", () => {
+    write(
+      path.join(reviewDir, "by-frontend.md"),
+      ["## Review of backend", "REVIEW: APPROVED", ""].join("\n"),
+    );
+
+    let result;
+    try {
+      const stdout = execFileSync("node", [HOOK], {
+        cwd: tmpDir,
+        encoding: "utf8",
+        env: { ...process.env, LOG_FORMAT: "json" },
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      result = { status: 0, stdout };
+    } catch (err) {
+      result = { status: err.status, stdout: err.stdout || "" };
+    }
+
+    assert.equal(result.status, 0);
+    const jsonLine = result.stdout.split("\n").find((l) => l.startsWith("{"));
+    assert.ok(jsonLine, `expected a JSON event line in stdout:\n${result.stdout}`);
+    const event = JSON.parse(jsonLine);
+    assert.equal(event.hook, "approval-derivation");
+    assert.equal(event.event, "gate_updated");
+    assert.equal(event.area, "backend");
+    assert.equal(event.reviewer, "dev-frontend");
+    assert.equal(event.verdict, "APPROVED");
+    assert.match(event.ts, /^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("emits no JSON when LOG_FORMAT is unset", () => {
+    write(
+      path.join(reviewDir, "by-frontend.md"),
+      ["## Review of backend", "REVIEW: APPROVED", ""].join("\n"),
+    );
+    const result = run(tmpDir);
+    assert.equal(result.status, 0);
+    const jsonLines = result.stdout.split("\n").filter((l) => l.trim().startsWith("{"));
+    assert.equal(jsonLines.length, 0, "no JSON lines should appear without LOG_FORMAT=json");
+  });
+
   // ── Concurrency: two reviewers writing the same gate at once ────────
 
   it("two concurrent reviewer hooks both land in the same gate without corruption", async () => {

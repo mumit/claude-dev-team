@@ -32,6 +32,23 @@ const path = require("path");
 const GATES_DIR = path.join(process.cwd(), "pipeline", "gates");
 const LESSONS_FILE = path.join(process.cwd(), "pipeline", "lessons-learned.md");
 
+// Structured-log mode (audit B-23). When LOG_FORMAT=json, the hook emits a
+// single JSON event line on stdout per invocation in addition to the
+// human-readable prose, so external orchestrators (CI runners, dashboards)
+// can consume hook results without parsing prose. Default off — humans
+// running Claude Code interactively see prose only.
+const LOG_JSON = process.env.LOG_FORMAT === "json";
+
+function logEvent(event, data) {
+  if (!LOG_JSON) return;
+  console.log(JSON.stringify({
+    ts: new Date().toISOString(),
+    hook: "gate-validator",
+    event,
+    ...data,
+  }));
+}
+
 // Matches the two valid forms documented in .claude/rules/retrospective.md:
 //   **Reinforced:** 0
 //   **Reinforced:** <N> (last: YYYY-MM-DD)   where N >= 1
@@ -203,6 +220,14 @@ function main() {
     console.log(
       `[gate-validator] ${bypassed.length} escalation(s) appear to have been bypassed; halting`,
     );
+    logEvent("bypassed_escalation", {
+      count: bypassed.length,
+      bypassed: bypassed.map((b) => ({
+        file: b.name,
+        agent: b.gate.agent || null,
+        reason: b.gate.escalation_reason || null,
+      })),
+    });
     process.exit(3);
   }
 
@@ -273,6 +298,7 @@ function main() {
       );
     }
     for (const a of advisories) console.log(`[gate-validator] ℹ️  ${a}`);
+    logEvent("gate_pass", { stage, agent, file: latest.name, warnings: gate.warnings || [] });
     process.exit(0);
   }
 
@@ -283,6 +309,7 @@ function main() {
       gate.blockers.forEach((b) => console.log(`  - ${b}`));
     }
     for (const a of advisories) console.log(`[gate-validator] ℹ️  ${a}`);
+    logEvent("gate_fail", { stage, agent, file: latest.name, blockers: gate.blockers || [] });
     process.exit(2);
   }
 
@@ -298,6 +325,11 @@ function main() {
       console.log(`[gate-validator] Options: ${gate.options.join(" | ")}`);
     }
     for (const a of advisories) console.log(`[gate-validator] ℹ️  ${a}`);
+    logEvent("gate_escalate", {
+      stage, agent, file: latest.name,
+      reason: gate.escalation_reason || null,
+      decision_needed: gate.decision_needed || null,
+    });
     process.exit(3);
   }
 }

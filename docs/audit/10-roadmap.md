@@ -74,8 +74,9 @@ could be better.
   `tests/contract.test.js` checks the union covers all stages.
 - **B-22 [DONE]** Replace busy-spin lock retry with `Atomics.wait` —
   synchronous, no CPU burn, callers unchanged.
-- **B-23** Structured log mode for hooks. Driven by demand from any
-  external orchestrator integration.
+- **B-23 [DONE]** Structured log mode for hooks (`LOG_FORMAT=json`).
+  Both hooks emit one JSON event line per terminal exit; schema
+  documented in `.claude/hooks/README.md`.
 - **B-24** Async-checkpoint conditional auto-pass. The config plumbing
   exists; the hook code does not. Codex sibling has the impl; port
   pattern.
