@@ -53,6 +53,13 @@ const SKILLS = [
   "security-checklist",
 ];
 
+const ADAPTERS = [
+  "docker-compose",
+  "kubernetes",
+  "terraform",
+  "custom",
+];
+
 const STAGE_NUMBERS = [
   "stage-01",
   "stage-02",
@@ -92,6 +99,7 @@ module.exports = {
   COMMANDS,
   RULES,
   SKILLS,
+  ADAPTERS,
   STAGE_NUMBERS,
   STAGE_SCHEMAS,
   HELPER_SCRIPTS,

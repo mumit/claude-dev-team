@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { PACKAGE_SCRIPTS } = require("../scripts/bootstrap");
 const { STAGES, TRACKS, draftGateObject, orderedStageNames } = require("../scripts/claude-team");
-const { RULES, SKILLS, STAGE_NUMBERS } = require("./_framework-contract");
+const { RULES, SKILLS, STAGE_NUMBERS, ADAPTERS } = require("./_framework-contract");
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -132,10 +132,8 @@ describe("framework contracts", () => {
   it("deployment adapters are documented and configured", () => {
     const config = read(".claude/config.yml");
     const adaptersReadme = read(".claude/adapters/README.md");
-    const adapterNames = ["docker-compose", "kubernetes", "terraform", "custom"];
-
     assert.match(config, /adapter: docker-compose/);
-    for (const name of adapterNames) {
+    for (const name of ADAPTERS) {
       const body = read(`.claude/adapters/${name}.md`);
       assert.match(adaptersReadme, new RegExp(`\`${name}\``));
       assert.match(body, new RegExp(`# Adapter: ${name}`));
