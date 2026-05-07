@@ -50,7 +50,7 @@ missing tests.
 | 11 | **B-13 [DONE]** Stoplist pre-flight check in `claude-team.js` | Highest-impact safety upgrade. Should ship before B-11 because a working stoplist makes the budget tracker safer. |
 | 12 | **B-11 [DONE]** Port `scripts/budget.js` from codex-dev-team | Closes the documented-but-missing budget gate; medium-size port. |
 | 13 | **B-14 [DONE]** Concurrency test for `approval-derivation.js` | Validates the v2.5.1 lock model under true parallelism. |
-| 14 | **B-15** Table-driven test for `security-heuristic.js` | One file, ~50 LOC; closes T-02. |
+| 14 | **B-15 [DONE]** Table-driven test for `security-heuristic.js` | One file, ~50 LOC; closes T-02. |
 | 15 | **B-9** Slash↔CLI cross-check test | Closes the third drift vector (after B-1 and parity-check.js). |
 | 16 | **B-18** Adapter-contract test | Cheap insurance for Stage 8 changes. |
 | 17 | **B-17** Refactor `claude-team.js` dispatch to object map | Pairs naturally with B-9 since both touch the dispatch table. |
