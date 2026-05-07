@@ -1,197 +1,153 @@
 # 08 — Code Quality
 
-## Scope
-
-Four hand-written executable files drive everything in this repo:
-
-| File | LOC | Language | Role |
-|---|---|---|---|
-| `.claude/hooks/gate-validator.js` | 89 | Node.js (CJS) | Pipeline gate validator hook |
-| `bootstrap.sh` | 167 | Bash | Installer for target projects |
-| `docs/build-presentation.js` | 686 | Node.js (CJS) | Presentation builder (marketing asset) |
-| `eslint.config.js` | 19 | Node.js (CJS) | ESLint flat config stub |
-| *(plus 4 test files, 642 LOC)* | | `node:test` | Suite |
-
-Everything else is Markdown/YAML — the framework definition. Quality of the markdown prose is covered in `03-compliance.md` and `05-documentation.md`. This file assesses the JS + shell.
-
----
-
 ## Findings
 
-### Duplication
+### Q-01 — Duplicate hook scripts with no parity test — MEDIUM × HIGH × HIGH
+**Files:** `.claude/hooks/gate-validator.js` ↔ `scripts/gate-validator.js`,
+`.claude/hooks/approval-derivation.js` ↔ `scripts/approval-derivation.js`.
 
-**Finding Q1 — PostToolUse hook duplicated across three dev agents**
-- Files: `.claude/agents/dev-backend.md:19-22`, `dev-frontend.md:17-20`, `dev-platform.md:17-20`
-- Observation: The same hook definition appears in all three dev agent files:
-  ```yaml
-  PostToolUse:
-    - matcher: "Write|Edit"
-      hooks:
-        - type: command
-          command: "cd $(git rev-parse --show-toplevel) && npm run lint --if-present 2>&1 | tee -a pipeline/lint-output.txt || true"
-  ```
-- Impact: A change to the lint invocation must be replicated in three places. The risk showed up during the health-check: the `tee` addition was a three-file edit.
-- Assessment: Known; parked as roadmap item #18. Blocked on Claude Code not yet supporting `imports:` / `extends:` in agent frontmatter. No framework-side fix available until the platform catches up.
-- Severity: **Low** | Effort: Small (but platform-blocked)
+This is the same finding as compliance C-01, restated here because
+duplication is the canonical code-quality issue. Currently byte-identical;
+no test pins them; git history shows past asymmetric edits.
 
-**Finding Q2 — Code-review task instructions repeat structure across three dev agents**
-- Files: `.claude/agents/dev-backend.md` (Review section), `dev-frontend.md`, `dev-platform.md`
-- Observation: Each dev agent has a "On a Code Review Task" section with the same file-read order and BLOCKER/SUGGESTION/QUESTION taxonomy. Differences are in focus (backend=API correctness, frontend=XSS, platform=testability) — which is by design.
-- Severity: **Informational** — duplicated structure, differentiated content.
+**Fix:** ~10-line `tests/hook-parity.test.js` that hashes both pairs and
+asserts equality. Effort: small. Impact: high (closes a real drift
+vector). Confidence: HIGH.
 
-**Finding Q3 — Build-presentation per-slide functions share boilerplate**
-- File: `docs/build-presentation.js` — eighteen `slideXxx(pres, ...)` functions
-- Observation: Since the Batch-4 refactor (per-slide functions), each slide function still repeats boilerplate: create slide, set background, set title, set subtitle, position cards, position footer. Helpers `addCard()`, `sectionSlide()`, `slideBg()` capture some of this.
-- Impact: Adding a new slide requires copy-edit of a sibling function, not just calling a higher-level primitive.
-- Severity: **Low** | Effort: Medium
-- Suggested fix: Extract a `pageTemplate(pres, {title, subtitle, body, footer})` that takes a body-builder callback. Each slide function then becomes a data object + body callback, reducing size.
+### Q-02 — Slash commands and CLI subcommands have no cross-check — MEDIUM × MEDIUM × MEDIUM
+**Files:** `.claude/commands/*.md` (23 files), `scripts/claude-team.js`
+dispatch table.
 
-### Complexity
+Both surfaces purport to do the same things. There is no test that
+verifies the set of slash commands and the set of CLI subcommands are
+1:1, or that they emit equivalent gates. A new command added to one
+surface and not the other ships silently.
 
-**Finding Q4 — `build()` orchestrator is now a thin composition**
-- File: `docs/build-presentation.js:606` (`async function build()`)
-- Observation: Since the Batch-4 refactor, `build()` primarily calls the per-slide helpers in order. It is no longer the 620-line monolith the prior audit flagged. Prior finding resolved.
-- Severity: Resolved.
+**Fix:** Test that lists all `.claude/commands/*.md` files (minus
+internal ones like `pipeline-context`, `pipeline-brief`) and asserts
+each has a corresponding `claude-team.js` subcommand string. Effort:
+small, ~30 LOC. Impact: medium.
 
-**Finding Q5 — `slidePipelineTeam`, `slideWhenToUse`, `slideSafetyTrust` are 60-80 lines each**
-- File: `docs/build-presentation.js` — several slide functions
-- Observation: Post-refactor, some slide functions carry the complexity of dense tables or multi-column layouts inline. They are readable, but a few exceed ~60 LOC each with non-trivial coordinate math.
-- Severity: **Low** | Effort: Small (per-slide)
-- Suggested fix: Extract inline tables into data arrays at the top of the function, then iterate. Cleans up the layout math.
+### Q-03 — `.claude/rules/pipeline.md` is 22k+ lines — LOW × MEDIUM × MEDIUM
+The single largest rule file. Sections cover Stage 0 routing, every
+stage's gate semantics, all six lighter tracks, the safety stoplist,
+async-friendly checkpoints, and so on. The content is correct and
+well-structured but the length makes any single agent's prompt
+expensive to load and tedious to debug.
 
-**Finding Q6 — `gate-validator.js` is simple, linear, and clean**
-- File: `.claude/hooks/gate-validator.js` (89 LOC)
-- No nested conditionals, no helper pyramid, no side-effect entanglement. Reads top-to-bottom. Aside from the error-handling gap noted in 03-compliance.md, this is well-structured code.
-- Severity: ✅ positive
+**Fix:** Optionally split into `pipeline-core.md` (stages 1–3 +
+checkpoints), `pipeline-build.md` (4–8), `pipeline-tracks.md` (track
+routing + stoplist + auto-pass conditions). Each agent loads only the
+files it needs. Effort: medium (every reference must be updated, and
+agents that "read pipeline.md at startup" must be retargeted). Impact:
+medium (faster loads, easier diff review). Confidence: MEDIUM (the
+trade-off is also losing single-file canonical answer).
 
-**Finding Q7 — `bootstrap.sh` is well-sectioned and commented**
-- File: `bootstrap.sh` (167 LOC)
-- Top-of-file block explains what the script does. Each phase (`# ── Preflight checks ──`, `# ── Copy .claude/`, `# ── Create root files`) is demarcated. Branching on file/directory existence is explicit and idempotent.
-- Severity: ✅ positive
+### Q-04 — `claude-team.js` dispatch is a long if-chain — LOW × MEDIUM × MEDIUM
+**File:** `scripts/claude-team.js` ~lines 1267–1300+.
 
-### Dead Code
+Adding a new subcommand requires finding the right spot in a long
+sequence of `if (cmd === '…')` branches. There is no single source of
+truth for the command list; help text is generated separately.
 
-**Finding Q8 — No dead code detected**
-- All functions in `build-presentation.js` called by `build()`. All files in `.claude/` referenced by at least one command, agent, or skill. No commented-out blocks. No orphaned test files.
-- Severity: ✅ clean
+**Fix:** Object-map dispatch:
+```js
+const commands = {
+  status: () => runNodeScript('status.js', argv),
+  next:   () => printNext(argv),
+  // ...
+};
+const fn = commands[argv[0]];
+if (!fn) { printUsage(); process.exit(2); }
+fn();
+```
 
-### Abstraction Health
+Effort: small. Impact: medium (self-documenting list, fewer adding-a-
+command mistakes). Confidence: MEDIUM.
 
-**Finding Q9 — `.claude/skills/implement/SKILL.md` and `pre-pr-review/SKILL.md` remain dense**
-- Files: skill bodies (~100 lines each)
-- Observation: Each mixes trigger rules, phase definitions, and workflow guidance in a single file. Still readable; no pressing split needed.
-- Assessment: Matches the prior audit's "acceptable at this size". Revisit if any skill grows past ~150 LOC.
-- Severity: **Informational**
+### Q-05 — Lock-tuning constants lack rationale comments — LOW × LOW × HIGH
+**File:** `.claude/hooks/approval-derivation.js` lines ~69–71.
 
-**Finding Q10 — `.claude/rules/pipeline.md` carries both orchestration prose and a stage table**
-- File: `.claude/rules/pipeline.md`
-- Observation: The stage-by-stage prose is the authoritative spec; the "Stage Duration Expectations" table added in Batch 4 is guidance. They coexist well. The file is ~200 lines and growing with each pipeline refinement.
-- Severity: **Informational**
-- Suggested improvement: If the file reaches ~300 LOC, consider extracting the duration / stall-indicator content into `.claude/references/pipeline-timing.md`.
+```
+const LOCK_RETRIES   = 20;       // why 20?
+const LOCK_DELAY_MS  = 30;       // why 30 ms?
+const LOCK_STALE_MS  = 5000;     // documented
+```
 
-### Naming & Clarity
+The stale-lock comment is informative; the other two are bare numbers.
+A reader must reverse-engineer the 600 ms total wait window.
 
-**Finding Q11 — `pipeline-status` renamed to `pipeline-context` (resolved)**
-- Prior audit flagged the name collision with `status`. `pipeline-context.md` now names the role (pre-compaction state dump) distinctly from the user-facing `/status` dashboard.
-- Severity: Resolved.
+**Fix:** Add the math in a comment, e.g. `// 20 × 30 ms = 600 ms total
+wait before bail` and a one-liner on why 600 ms (longer than typical
+hook startup, shorter than human-noticeable). Effort: trivial.
 
-**Finding Q12 — `lint:frontmatter` is a misnamed test script**
-- File: `package.json:10`
-- Observation: `"lint:frontmatter": "node --test tests/frontmatter.test.js"` — executes a test, not a linter. Same finding noted in 03-compliance.md (Finding 2).
-- Severity: **Low** | Effort: XS — rename to `test:frontmatter` or add an explanatory comment.
+### Q-06 — `docs/build-presentation.js` 934 LOC, no unit tests — LOW × LOW × HIGH
+Mirror of T-03. The smoke test does `node --check` and an optional
+runtime build but doesn't exercise any of the 23 slide functions
+individually.
 
-**Finding Q13 — Magic numbers in `build-presentation.js`**
-- File: `docs/build-presentation.js` throughout
-- Observation: `x: 0.7`, `y: 1.55`, `w: 4.3` — slide layout coordinates without named constants. Appropriate for a presentation script since coordinates are inherently positional, but the same values (0.7 margin, 4.1 card width) recur.
-- Severity: **Low** | Effort: Medium — worth it only if the file sees more churn.
+**Fix:** ~30-LOC unit test that mocks `pptxgenjs` + `sharp` and asserts
+each slide function runs without throwing and produces the expected
+number of `slide.addText` calls. Effort: small. Impact: low (the script
+isn't on the pipeline critical path). Confidence: HIGH.
 
-**Finding Q14 — Gate stage naming is mixed but documented**
-- File: `.claude/rules/gates.md`, `.claude/commands/status.md`
-- Observation: Most stages have one gate (`stage-01.json`), Stages 4 and 5 have per-area gates (`stage-04-backend.json`). The status dashboard code handles both. Intentional.
-- Severity: ✅ by design
+### Q-07 — Test contracts duplicated in `contract.test.js` and `dogfood.test.js` — LOW × LOW × MEDIUM
+Both files independently iterate over the same hard-coded lists of
+required files (agents, rules, schemas, skills, commands). Adding an
+agent means updating both lists.
 
-### Dependency & Tooling Health
+**Fix:** Extract to a single `tests/_framework-contract.js` that
+exports the lists; both tests `require()` it. Effort: trivial. Impact:
+low. Confidence: HIGH.
 
-**Finding Q15 — `package.json` + `package-lock.json` present; reproducible installs (resolved)**
-- Files: `package.json`, `package-lock.json`
-- Prior audit's "no dependency manifest" finding is fully resolved. All seven devDeps pinned; lockfile committed; no runtime deps.
-- Severity: Resolved.
+### Q-08 — `pipeline.md` and agent prompts have tight bilateral coupling — LOW × LOW × LOW
+The pipeline rule says "invoke `dev-platform` at Stage 4.5a";
+`dev-platform.md` says "I run pre-review checks at Stage 4.5a." If
+Stage 4.5a is ever renumbered, both must change. There is no test
+asserting they agree.
 
-**Finding Q16 — ESLint is configured but with only recommended rules**
-- File: `eslint.config.js` (19 LOC)
-- Observation: Flat config is correct, uses `@eslint/js` recommended preset, ignores `node_modules/`, sets CommonJS + Node globals. No project-specific rules.
-- Assessment: Defensible for a ~900-LOC JS surface. The ruleset catches genuine bugs (unused vars, unreachable code). It does not enforce code-conventions skill rules (kebab-case, JSDoc on public functions, no magic numbers).
-- Severity: **Low** | Effort: Small — noted in 03-compliance Finding 1.
+**Fix:** A schema-lite contract test that parses stage references in
+both files and asserts agreement. Effort: small. Impact: low (current
+state is correct; this guards against future drift). Confidence: LOW —
+might be over-engineering.
 
-**Finding Q17 — No formatter (Prettier or equivalent) configured**
-- Observation: `node:test` files and hand-written JS use mixed quote styles (`"` in gate-validator.js, `'` in tests). ESLint doesn't fail on this.
-- Impact: Low; single-maintainer project with consistent intra-file style.
-- Severity: **Informational**
+## Dead code, dependency hygiene
 
-**Finding Q18 — Test-to-source ratio is healthy**
-- Test files: 642 LOC across 4 files
-- Source JS: ~900 LOC (gate-validator + build-presentation + eslint.config)
-- Shell: 167 LOC (bootstrap)
-- Ratio ~0.7:1 by LOC. For a codebase where most files are config/markdown, this is above average.
-- Severity: ✅ positive
+- **No TODO/FIXME/XXX/HACK** anywhere in the codebase.
+- **No commented-out code** observed in any of the high-churn files.
+- **No unused imports** — ESLint `no-unused-vars` is on; CI is clean.
+- **No unused devDeps**: `pptxgenjs`, `react`, `react-dom`, `sharp`,
+  `react-icons` are all imported by `docs/build-presentation.js`.
+  `eslint`, `@eslint/js`, `globals` are active linters. Verified with
+  `grep -r 'require\|import'`.
+- `npm audit` reports 0 vulnerabilities.
 
-### Shell Script Quality
+## Naming and clarity
 
-**Finding Q19 — `bootstrap.sh` sets `-e` and uses `command -v` preflight (clean)**
-- File: `bootstrap.sh:21, 35-40`
-- `set -e` aborts on first error. `command -v` preflight checks for required binaries. Variables are consistently quoted.
-- Severity: ✅ positive
+- All slash command names follow `kebab-case` consistently.
+- All script files use `kebab-case.js`. All test files use
+  `kebab-case.test.js`.
+- All gate file names follow `stage-NN[-area].json`. Verified in
+  `consistency.test.js`.
+- Constants are SHOUT_CASE (`LOCK_STALE_MS`, `REVIEW_DIR`, etc.).
+  Consistent.
+- No misleading names observed.
+- No undocumented magic numbers other than Q-05.
 
-**Finding Q20 — `bootstrap.sh` lacks `set -u` and `set -o pipefail`**
-- File: `bootstrap.sh:21`
-- Observation: `set -e` alone doesn't catch unset variables (`set -u`) or pipe failures (`set -o pipefail`). Neither is critical for this script — it uses only defined variables and has no pipes — but `set -euo pipefail` is the idiomatic bash-strict mode.
-- Severity: **Low** | Effort: XS — one-line change.
+## Code that's surprisingly good (preserve)
 
-**Finding Q21 — `.gitignore` append block in `bootstrap.sh` is 18 echo lines**
-- File: `bootstrap.sh:110-132`
-- Observation: Long sequence of `echo "pipeline/..." >> "$TARGET/.gitignore"`. Works, but a heredoc (`cat >> "$TARGET/.gitignore" <<'EOF' ... EOF`) would be more readable and atomic.
-- Severity: **Low** | Effort: XS
-
-### Test Code Quality
-
-**Finding Q22 — Test helpers are compact and reused**
-- Files: `tests/gate-validator.test.js:14-29` (`run(cwd)` helper), `tests/bootstrap.test.js` (temp-dir helpers)
-- Observation: Each test file defines small helpers at the top and reuses them. No global fixture file, which is fine at this scale.
-- Severity: ✅ positive
-
-**Finding Q23 — Mixed quote style across test files**
-- Files: `tests/*.test.js`
-- Observation: `gate-validator.test.js` uses double quotes; `frontmatter.test.js`, `bootstrap.test.js`, `smoke-presentation.test.js` use single quotes.
-- Severity: **Informational** — would be caught by Prettier if configured.
-
----
-
-## Summary
-
-| # | Finding | Effort | Impact | Status |
-|---|---|---|---|---|
-| Q1 | Dev-agent hook duplication (3×) | Small | Low | Parked (platform-blocked) |
-| Q2 | Review instructions structural repeat | — | Info | By design |
-| Q3 | Per-slide boilerplate in build-presentation | Medium | Low | Open |
-| Q4 | build() no longer monolithic | ✅ | — | Resolved |
-| Q5 | A few slides still 60-80 LOC | Small | Low | Open |
-| Q6 | gate-validator.js clean | ✅ | — | Clean |
-| Q7 | bootstrap.sh well-sectioned | ✅ | — | Clean |
-| Q8 | No dead code | ✅ | — | Clean |
-| Q9 | Dense skill files | — | Info | Acceptable |
-| Q10 | pipeline.md size trend | — | Info | Monitor |
-| Q11 | pipeline-status → pipeline-context | ✅ | — | Resolved |
-| Q12 | lint:frontmatter script misname | XS | Low | Open |
-| Q13 | Magic numbers in presentation | Medium | Low | Acceptable |
-| Q14 | Mixed gate naming (stage-04 vs stage-04-{area}) | — | — | By design |
-| Q15 | package.json + lockfile | ✅ | — | Resolved |
-| Q16 | ESLint rules minimal | Small | Low | Open |
-| Q17 | No formatter | — | Info | Acceptable |
-| Q18 | Test/source ratio healthy | ✅ | — | Clean |
-| Q19 | bootstrap set -e + preflight | ✅ | — | Clean |
-| Q20 | No `set -u`, no `pipefail` | XS | Low | Open |
-| Q21 | .gitignore append via echo loop | XS | Low | Open |
-| Q22 | Test helpers compact | ✅ | — | Clean |
-| Q23 | Mixed quote style | — | Info | Cosmetic |
-
-**Overall quality**: Good for the framework's executable code. Seven prior findings are resolved by the April 2026 health-check refactors (per-slide extraction, command rename, dependency manifest, lint hook output capture, and infrastructure adds). The remaining open items are mostly **XS/Small effort** polish — bash strictness, one script rename, a presentation-layout cleanup — none blocking any quality goal. Two items (Q1 hook duplication and Q9 skill density) are known and accepted. The executable surface is small and healthy; the investment should go to Phase 3 items with user-facing leverage, not further refactoring this tier.
+1. **Approval-derivation atomic write + lock pattern.** Correct
+   stale-lock recovery, atomic temp-file rename, finally-block release.
+2. **Bespoke schema validation** in `gate-validator.js` is crisp,
+   ~50 LOC, no library bloat.
+3. **`docs/build-presentation.js` modular slide functions.** 23
+   per-slide functions, none over ~70 LOC. Easy to edit one slide
+   without touching others; constants for icons and palette at module
+   top.
+4. **Bootstrap idempotency helpers** (`writeIfMissing`, `.local.*`
+   preservation logic) are reusable and well-tested.
+5. **Track routing as a readable table** in `pipeline.md` rather than
+   computed logic. Anyone can audit which stage a track skips.
+6. **All file lists in tests are explicit constants**, not glob
+   discoveries — making it obvious when a file is added/removed and
+   intentional which test asserts on which file.

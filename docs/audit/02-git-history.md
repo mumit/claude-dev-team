@@ -1,98 +1,118 @@
 # 02 — Git History
 
-## Repository summary
+## Volume and shape (last 6 months)
 
-- **Total commits**: 38 (main branch, including merges)
-- **Contributors**: 1 author (`mumit-khan`, plus a `claude/*` authored-by-Claude branch visible in merges)
-- **Age**: Active March 31 → April 16, 2026 — ~2.5 weeks of concentrated work
-- **Branching model**: short-lived `feat/`, `fix/`, `improve/`, `refactor/`, and `claude/` branches, squash-merged into `main` via GitHub PRs
-- **Current branch**: `claude/audit-codebase-spORu`
+- **106 commits** (sustained ~18/month).
+- **34 merge commits** — author squashes feature branches and merges via PR.
+- **62%** of commits follow Conventional Commits (`feat:`, `fix:`, `docs:`,
+  `chore:`, `refactor:`, `test:`); the remaining 38% are merge commits and a
+  handful of legacy unprefixed commits.
+- **Single author** for the entire 6-month window: `mumit-khan`. No
+  co-authors, no second reviewer of record.
 
-## Churn hotspots (last 6 months)
+## Recent versions (from `CHANGELOG.md`)
 
-| Touches | File |
-|---|---|
-| 5 | `README.md` |
-| 3 | `pipeline/context.md` |
-| 3 | `package.json` |
-| 3 | `docs/build-presentation.js` |
-| 3 | `bootstrap.sh` |
-| 3 | `CLAUDE.md` |
-| 3 | `AGENTS.md` |
-| 3 | `.claude/rules/pipeline.md` |
-| 3 | `.claude/commands/reset.md` |
-| 3 | `.claude/agents/dev-platform.md` |
-| 2 | `tests/bootstrap.test.js` |
-| 2 | `docs/lifecycle.md` |
-| 2 | `docs/faq.md` |
-| 2 | `docs/audit/10-roadmap.md` |
-| 2 | `docs/audit/09-backlog.md` |
-| 2 | `CONTRIBUTING.md` |
-| 2 | `.github/workflows/test.yml` |
-| 2 | `.claude/settings.json` |
-| 2 | `.claude/hooks/gate-validator.js` |
-
-**Read**: Five categories of hot files.
-
-1. **User-facing docs** (`README.md`, `CLAUDE.md`, `AGENTS.md`) top the list — expected for a young framework project where surface documentation gets iterated as capabilities land.
-2. **Pipeline configuration** (`pipeline/context.md`, `.claude/rules/pipeline.md`, `.claude/commands/reset.md`, `.claude/agents/dev-platform.md`) — the pipeline definition and its platform dev agent keep being tuned. This matches the roadmap history: stage-03 dashboard entry, worktree cleanup, lint output hook, platform context read.
-3. **Build-presentation** touched 3× in two weeks is disproportionate — it's a marketing asset, not a core concern, but it attracts refactors (e.g., `refactor: split build-presentation.js into per-slide functions`, `5184fa7`).
-4. **Tooling & CI** (`package.json`, `bootstrap.sh`, `.github/workflows/test.yml`) iterated alongside the first test+CI landing.
-5. **Audit outputs themselves** (`docs/audit/09-backlog.md`, `docs/audit/10-roadmap.md`) are tracked in git and being refreshed by the health-check cycle. This is the output of the framework being used on itself.
-
-No hotspot looks pathological — nothing shows 10+ touches or sign of thrash.
-
-## Co-change patterns (last 6 months)
-
-| Times co-changed | File set |
-|---|---|
-| 2 | `docs/audit/10-roadmap.md` + `pipeline/context.md` |
-| 2 | `.claude/rules/pipeline.md` |
-| 1 | All 11 audit markdown files + `.gitignore` + `status.json` (one big "track audit files" commit) |
-| 1 | `.github/workflows/test.yml` + `docs/audit/09-backlog.md` + `docs/build-presentation.js` + `eslint.config.js` + `package-lock.json` + `package.json` + `tests/smoke-presentation.test.js` |
-| 1 | `package.json` + `tests/bootstrap.test.js` |
-| 1 | `.gitignore` + `package.json` + `package-lock.json` |
-| 1 | `.claude/skills/implement/SKILL.md` + `docs/lifecycle.md` |
-
-**Hidden coupling worth noting**:
-- **`docs/audit/10-roadmap.md` ↔ `pipeline/context.md`** co-changes reflect the `implement` skill's documented workflow — mark roadmap item done, append to fix log. Intentional coupling.
-- **One giant mixed commit** (`388a1c0 feat: implement all health-check recommended actions`) touches CI, presentation build, eslint, package config, audit backlog, and adds a new smoke test. 7 files, mixed concerns. Would have reviewed more cleanly as 3-4 smaller PRs — but the commit message is clear and it's tagged as a batch of health-check items.
-- **`.claude/skills/implement/SKILL.md` ↔ `docs/lifecycle.md`** co-change is a documentation sync (expected when a skill contract changes).
-
-No accidental coupling across agent / rule boundaries.
-
-## Recent trajectory
-
-| Area | Status | Evidence |
+| Version | Date | Theme |
 |---|---|---|
-| Agent definitions | **Stable** | All five agents last touched 2 weeks ago; `dev-platform.md` got worktree + deploy tuning |
-| Pipeline rules | **Stable-to-maturing** | Stage duration table added Apr 9; stage-05 merge clarified Apr 2 |
-| Gate validator | **Stable** | Field validation landed Apr 2, test suite followed Apr 9, no changes since |
-| Commands | **Growing** | 18 commands; `pipeline-context` rename, `/hotfix` blast-radius guard |
-| Skills | **Growing** | `implement` skill gained a Commit step in PR #4 (Apr 14) |
-| Tests & CI | **New, active** | `node:test` suites + GH Actions landed Apr 9; smoke test for presentation Apr 14 |
-| Bootstrap | **Active** | Cross-platform portability fix Apr 9; safe-for-existing-projects refactor Apr 14 |
-| Documentation | **Active** | README, lifecycle, faq, presentation all iterating |
-| Audit output | **Self-auditing** | Audit files checked in Apr 10; April health-check + PR #8 refreshed backlog/roadmap |
+| v2.6.0 | 2026-05-01 | Automation layer: Node CLI `claude-team.js`, 15 helper scripts, schemas, templates, `examples/tiny-app`, expanded test suite |
+| v2.5.1 | 2026-04-23 | `/nano` track + correctness fixes (Stage 9 retro, Stage 5 gate file lock, security heuristic) |
+| v2.5.0 | 2026-04-21 | Budget gate (config-level), PATTERN tag, lesson auto age-out, async checkpoints |
+| v2.4.0 | 2026-04-21 | Deployment adapters + Stage 8 runbook requirement |
+| v2.3.1 | 2026-04-21 | Scoped peer review + approval-derivation hook (closes self-approval loophole) |
+| v2.3.0 | (earlier) | dev-platform split → dev-qa + security-engineer |
 
-**Stable**: agents, rules, hooks, gate schema.
-**Active**: audit self-maintenance, skills, bootstrap, CI + testing.
+The v2.x stack landed in a tight burst on 2026-04-21, then v2.5.1 / v2.6 in
+the following two weeks. Velocity is high; the framework is past the
+"churning the model" phase.
+
+## Churn hotspots
+
+Top-changed files in the last 6 months, grouped:
+
+**Documentation (high churn — expected, healthy)**
+- `README.md` — 14 commits
+- `CHANGELOG.md` — 11 commits
+- `docs/build-presentation.js` — 10 commits
+- `CONTRIBUTING.md` — 6 commits
+
+**Rules and orchestration (high churn — pipeline shape evolving)**
+- `.claude/rules/pipeline.md` — 9 commits
+- `.claude/rules/gates.md` — 9 commits
+- `.claude/rules/orchestrator.md` — 6 commits
+
+**Agents (steady churn — interface tightening)**
+- `.claude/agents/dev-platform.md` — 9 commits
+- `.claude/agents/principal.md` — 6 commits
+- `.claude/agents/dev-frontend.md` — 6 commits
+- `.claude/agents/dev-backend.md` — 6 commits
+- `.claude/agents/dev-qa.md` — 4 commits
+
+**Hooks and validators (matched co-evolution with tests)**
+- `.claude/hooks/gate-validator.js` — 6 commits
+- `scripts/gate-validator.js` — 6 commits (mirrors the hook)
+- `tests/gate-validator.test.js` — 4 commits
+
+**Build / CI**
+- `package.json` — 8 commits
+- `.github/workflows/test.yml` — 4 commits
+- `tests/bootstrap.test.js` — 6 commits
+
+## Co-change patterns (hidden coupling)
+
+- **`docs/audit/10-roadmap.md` ↔ `pipeline/context.md`** — 5 commits change
+  both. Indicates audit findings are flowing into the live pipeline state,
+  which is good practice but creates a hard coupling between an audit
+  artefact and a pipeline runtime artefact. (Worth being aware of.)
+- **`.claude/hooks/gate-validator.js` ↔ `tests/gate-validator.test.js`** —
+  always co-changed. Healthy.
+- **`.claude/hooks/gate-validator.js` ↔ `scripts/gate-validator.js`** — also
+  co-changed in most commits, but **not all**. This is the latent drift bug
+  flagged in finding C-01: the two files must be byte-similar, but no test
+  pins them, and at least one commit in the recent past touched only one of
+  the two.
+- **`docs/build-presentation.js` ↔ `package-lock.json`** — co-change on
+  Reveal.js / pptxgenjs version bumps. Expected.
+
+## Trajectory
+
+**Actively evolving:**
+- Pipeline rule details (gate fields, retry semantics, security heuristic).
+- Documentation (release notes, migration guide, presentation deck).
+- Test infrastructure (the v2.6 commit added many new tests at once).
+
+**Stabilising:**
+- Agent persona definitions — text edits only, no role changes since v2.3.
+- Bootstrap script — last meaningful change was cross-platform compat.
+- Schemas — additive only; `stage-04a.schema.json` is the most recent
+  addition.
 
 ## Commit quality
 
-Aggregate over the last 6 months (non-merge commits only):
-- **13 non-merge commits**
-- **Average ~7.5 files per commit, ~633 insertions / ~22 deletions per commit** — bias toward *adding* new material, which matches the project's early growth stage.
-- **Conventional Commits**: 100% of non-merge commits use a `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, or `test:` prefix. Some include a scope (`feat(implement): ...`). Good consistency.
-- **PR discipline**: every change to `main` in this window went through a PR (visible via `Merge pull request #N` commits). No direct pushes.
-- **Subject quality**: messages read as action-oriented with concrete scope. Examples:
-  - `feat: add CI workflow to run tests on push and PRs`
-  - `fix: capture lint output from dev agent PostToolUse hooks`
-  - `refactor: split build-presentation.js into per-slide functions`
-- **Commit size distribution**: mostly small (1-3 files). Two outliers: `bc962c8 feat: add audit workflow...` and `388a1c0 feat: implement all health-check recommended actions` — each a cohesive batch but on the edge of what's easy to review.
+- **Median commit size:** 2 files. Interquartile 2–4.
+- **Largest commit:** `7371ab4` — "feat: elevate claude with codex
+  automation" — 59 files. This was the v2.6 automation layer landing in one
+  commit. The size is justified (the automation surface is meaningless
+  partial), but it does mean Stage-5-style review on the framework itself
+  was not feasible for that commit.
+- **Reverts:** essentially zero. No thrashing.
+- **WIP / TODO / "fix later":** none observed in commit messages.
+- **Merge messages** are uniform "Merge pull request #N from …" — fine for
+  a one-author repo; would be sparser than ideal in a multi-author repo.
 
-## Summary
+## Surprises
 
-This is a **young, single-maintainer project in active build-out**, now moving into a self-maintenance phase (audit-driven improvements, a CI pipeline, integration tests). Commit hygiene is excellent — Conventional Commits throughout, focused PRs, no direct-to-main pushes. The only mild concern is two mixed-concern batch commits that would have been easier to review as smaller PRs; not a pattern, just isolated instances.
-
-No tech-debt signal, no refactor thrash, no test-bypass commits, no reverted features. Hotspots are concentrated exactly where you'd expect for a framework at this stage: docs, pipeline config, and the self-audit outputs.
+1. **All work by one author.** This is the framework that mandates two
+   approvals per stage-05 gate on its target projects. The framework's own
+   PRs do not have a second reviewer of record. This is not a defect, but
+   it weakens the framework's ability to dogfood its own peer-review rule.
+2. **`docs/build-presentation.js` is in the top-10 churn list and has no
+   test file.** All other top-churn JS files have a paired test. (Finding
+   T-03.)
+3. **Two CHANGELOG entries dated `2026-04-21`** for v2.3.1, v2.4.0, v2.5.0
+   suggest a same-day cut of three feature releases. Cross-check with the
+   release-notes documents; they're labelled as separate work, just shipped
+   together. Acceptable, but a future audit reviewer reading commit dates
+   could be confused.
+4. **No CI run on the merge commits themselves** — the CI matrix runs on PR
+   pushes, not on merge-to-main. Combined with single-author, this means
+   main has effectively the same CI guarantee as feature branches. Minor.

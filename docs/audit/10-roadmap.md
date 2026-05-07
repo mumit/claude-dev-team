@@ -1,133 +1,141 @@
 # 10 — Sequenced Roadmap
 
-## Baseline
+## How this is sequenced
 
-All 15 items from the prior cycle's Batches 1–4 are **DONE**. The previously-parked item #16 (YAML linting in CI) was unparked and completed in the April 2026 health-check. Two platform-blocked items (E2E pipeline test, agent consolidation) remain parked pending Claude Code feature support. This cycle's roadmap is therefore a maintenance-rhythm plan, not a catch-up plan.
+The framework is in a healthy v2.6.0 state with no P0 blockers. The
+roadmap orders work to (a) close the highest-leverage drift vectors
+first, (b) ship documentation polish that costs nothing and prevents
+onboarding pain, and (c) close functional gaps where the framework
+documents behaviour it doesn't actually implement.
 
-Verification criteria used throughout:
-- "Tests pass" means `npm test` green on Node 20 and 22.
-- "CI green" means the GitHub Actions workflow completes without failure.
-- Items that touch agent/skill files additionally require `npm run lint:frontmatter` (frontmatter validation) to pass.
+## Batch 1 — Immediate (this week, half a day total)
 
----
+**Goal:** close the silent-drift vectors that could cause real bugs, and
+tighten the obviously-loose security knob.
 
-## Batch 1 — Immediate (this week)
+| Order | Item | Why this first |
+|---|---|---|
+| 1 | **B-1 [DONE]** Hook parity test | 10-line test that prevents the most likely future bug class. Trivially safe. |
+| 2 | **B-3** `gate-validator` error-class branching | Silent PASS on EACCES is the only place a real bug could hide; cheap to fix. |
+| 3 | **B-2** Tighten `Bash(curl *)` allow-list | Single-line edit to `settings.json`. Reduces exfil surface to near-zero. |
+| 4 | **B-19** Release-version consistency test | One assertion guarding all future releases. Trivial. |
+| 5 | **B-10** Extract `tests/_framework-contract.js` | Removes a duplication that's already biting in two test files. |
 
-Seven XS-effort items. All self-contained, none blocking each other. Can land as one "quality-pass" PR or, if preferred, a small cluster of focused commits.
+Parallelisable: yes — five independent commits, no shared file edits.
+Verification: `npm test` after each. Total effort: ~2–3 hours.
 
-| # | Item | Effort | Parallel? | Verification |
-|---|---|---|---|---|
-| 1 | [DONE] Expand `CLAUDE.md` with repo-specific guidance | XS | Yes | File present at ~30 LOC; points to CONTRIBUTING.md |
-| 2 | [DONE] Rename `lint:frontmatter` or add explanatory note | XS | Yes | `npm run test:frontmatter` (or documented script) works |
-| 3 | [DONE] `bootstrap.sh` → `set -euo pipefail` | XS | Yes | `npm run test:integration` still passes |
-| 4 | [DONE] Deny short-form + force-with-lease pushes | XS | Yes | `.claude/settings.json` deny list updated |
-| 5 | [DONE] rsync preflight in `tests/bootstrap.test.js` | XS | Yes | Without rsync, test fails fast with clear message |
-| 6 | [DONE] Heredoc `.gitignore` append in `bootstrap.sh` | XS | Yes | Integration test passes; fewer lines |
-| 7 | [DONE] Seed-file warning header in `pipeline/context.md` | XS | Yes | Header visible at top of file |
+## Batch 2 — Documentation polish (next 1–2 weeks, half a day total)
 
-**Completed**: 2026-04-17 across commits `22d3c38` (bootstrap hardening), `09b40f5` (docs and naming), `747e496` (deny list). All 98 tests green on Node 20 and 22.
+**Goal:** close the four small onboarding-cliff items. Pure docs work,
+zero runtime risk.
 
-**Estimated effort**: 1–2 hours total (single PR feasible).
-**Infra changes**: None.
-**Order**: All seven are independent. The sensible bundling is: items 3, 5, 6 in a "bootstrap hardening" commit; items 1, 2, 7 in a "docs and naming" commit; item 4 as its own commit (security-sensitive).
-**Risks**: Item 2 (`lint:frontmatter` rename) could break external scripts or muscle memory. Recommend keeping the old name as an alias for a release cycle, or just adding the explanatory comment.
+| Order | Item | Why |
+|---|---|---|
+| 6 | **B-4** Add `description` fields to `schemas/*.schema.json` | One-time, helps every future gate author. |
+| 7 | **B-5** `templates/README.md` | Eleven one-liners. |
+| 8 | **B-6** `.claude/hooks/README.md` | Documents hook event contract. |
+| 9 | **B-7** README "First 30 minutes" + EXAMPLE.md link + adapter one-liner | Closes the three onboarding frictions in one PR. |
+| 10 | **B-8** Lock-tuning rationale comments | Comment-only edit. |
 
----
+Parallelisable: yes — independent files. Verification: `npm run
+lint:frontmatter`; eyeball the rendered docs. Total effort: ~3–4 hours.
 
-## Batch 2 — Weeks 1–2 (targeted improvements)
+## Batch 3 — Targeted improvements (weeks 3–6)
 
-Seven items delivering specific user-facing value. Each makes sense as its own PR.
+**Goal:** close the documented-but-unimplemented gaps and add the
+missing tests.
 
-| # | Item | Effort | Depends on | Verification |
-|---|---|---|---|---|
-| 8 | [DONE] "Concepts" section in README or `docs/concepts.md` | S | None | One-paragraph definitions for agent / command / skill / rule / hook |
-| 9 | [DONE] Top-level try/catch in `gate-validator.js` | S | None | New unit test: internal throw exits 0 with WARN message |
-| 10 | [DONE] `npm audit --audit-level=high` in CI | XS–S | None | CI fails on introduced high/critical CVEs |
-| 11 | [DONE] `macos-latest` in CI matrix | XS | Item 3 (bootstrap pipefail) landed | Matrix green on both runners |
-| 12 | [DONE] Runtime smoke test for `build-presentation.js` | S | None | `BUILD_PRESENTATION_OUT` env var in builder; test runs end-to-end |
-| 13 | [DONE] "Adding a new command / skill / agent" in CONTRIBUTING.md | S | Item 8 useful but not required | Prose present; copy-paste example works |
-| 14 | [DONE] Tighten ESLint rules beyond `recommended` | S | None | `npm run lint` still green; small cleanup accepted if needed |
+| Order | Item | Sequencing notes |
+|---|---|---|
+| 11 | **B-13** Stoplist pre-flight check in `claude-team.js` | Highest-impact safety upgrade. Should ship before B-11 because a working stoplist makes the budget tracker safer. |
+| 12 | **B-11** Port `scripts/budget.js` from codex-dev-team | Closes the documented-but-missing budget gate; medium-size port. |
+| 13 | **B-14** Concurrency test for `approval-derivation.js` | Validates the v2.5.1 lock model under true parallelism. |
+| 14 | **B-15** Table-driven test for `security-heuristic.js` | One file, ~50 LOC; closes T-02. |
+| 15 | **B-9** Slash↔CLI cross-check test | Closes the third drift vector (after B-1 and parity-check.js). |
+| 16 | **B-18** Adapter-contract test | Cheap insurance for Stage 8 changes. |
+| 17 | **B-17** Refactor `claude-team.js` dispatch to object map | Pairs naturally with B-9 since both touch the dispatch table. |
+| 18 | **B-12** Port `scripts/visualize.js` from codex-dev-team | Optional QoL, can ship any time. |
+| 19 | **B-16** Cap JSON parse size in gate readers | Defence in depth. |
+| 20 | **B-20** Hook command `git rev-parse` fallback | Niche but cheap. |
 
-**Completed**: 2026-04-17. `docs/concepts.md` added and linked from README + CONTRIBUTING; `gate-validator.js` wrapped with internal-error catch (14 subtests now); CI matrix expanded to `{ubuntu-latest, macos-latest} × {Node 20, 22}` with `npm audit --audit-level=high` gate; smoke test builds a real .pptx via `BUILD_PRESENTATION_OUT`; CONTRIBUTING.md has full how-to sections; ESLint adds `eqeqeq`, `no-var`, `prefer-const`, `no-unused-vars`. All 100 tests green.
+Parallelisable: B-11/B-12 can ship together (both port from codex).
+B-13–B-15 are independent. B-17 should land before B-9 to share the
+dispatch refactor. Verification: extended `npm test`. Total effort:
+~3–4 days, distributable across reviewers.
 
-**Estimated effort**: 1–2 working days total if done serially.
+## Batch 4 — Strategic (month 2+)
 
-**Parallelization**: Items 8, 10, 11, 13, 14 are independent and can be split across contributors / sessions. Item 9 touches gate-validator — coordinate with anyone else editing that file. Item 12 requires a minor change to `build-presentation.js` — isolated from the rest.
+**Goal:** evolve the framework where the current shape is fine but
+could be better.
 
-**Infra changes**: CI matrix grows to 2×2 (os × node). Expect ~2× runtime but no secrets or new dependencies.
+- **B-21** Split `pipeline.md` into three files. Run only after B-9 and
+  B-11 land so the new files reflect the latest stage list. Mini-
+  proposal: each agent's frontmatter declares which subset it loads;
+  `tests/contract.test.js` checks the union covers all stages.
+- **B-22** Async setTimeout-based lock retry. Keep on the back-burner;
+  current busy-spin is invisible at present scale.
+- **B-23** Structured log mode for hooks. Driven by demand from any
+  external orchestrator integration.
+- **B-24** Async-checkpoint conditional auto-pass. The config plumbing
+  exists; the hook code does not. Codex sibling has the impl; port
+  pattern.
+- **B-25** Behavioural parity check vs codex-dev-team. Today's parity
+  is file-presence + config-key. Promote to "given the same gate
+  inputs, both repos' validators emit the same outputs" — would catch
+  semantic drift.
+- **B-26** Move `docs/build-presentation.js` into `scripts/`. Pure
+  cleanliness; doesn't fix a bug. Park unless contributors keep getting
+  confused by its location.
+- **B-27** ADR for the bilateral coupling between `pipeline.md` and
+  agent prompts.
 
-**Risks**:
-- Item 14 (ESLint) is the most likely to surface incidental cleanup in existing code. Scope carefully; a single rule that catches a real latent bug is a win, a rule that costs 2 hours of style edits is not.
-- Item 12 depends on `sharp` installing cleanly on macOS in CI. It already does on Ubuntu; macOS should work but has been historically finicky.
+## Verification gates per batch
 
----
+- After Batch 1: `npm test`, `npm run lint`, `npm run validate`,
+  `npm run parity:check`. All green.
+- After Batch 2: doc rendering and a manual run-through of the README
+  "First 30 minutes" path.
+- After Batch 3: full pipeline dogfood end-to-end, plus a second
+  pipeline run that exercises `/quick` on a stoplist-matching path
+  (must reject), and a budget-exceeded run (must escalate).
+- After Batch 4: parity check vs codex-dev-team and a CHANGELOG note.
 
-## Batch 3 — Weeks 3–6 (strategic investments)
+## Roadmap risks
 
-Three S/M items that are worth doing but aren't urgent.
+- **The hook-parity test (B-1) might catch a current asymmetry not
+  visible by `diff`.** Today's diff is empty, but `crypto.createHash`
+  on the same content from different OSes (line-ending differences)
+  could surface. Mitigation: write the test, run it once, fix any line-
+  ending mismatch before committing.
+- **Stoplist enforcement (B-13) could over-trigger and frustrate
+  users.** Tune the regex on real diffs from past pipelines before
+  shipping. Mitigate via a `--force-track` flag for cases where the
+  regex misclassifies.
+- **Budget tracker port (B-11) depends on the codex script.** If the
+  codex sibling has a Codex-specific assumption baked in (it doesn't
+  appear to), the port will need adaptation.
+- **`pipeline.md` split (B-21) could break agent prompts** that
+  hardcode the file path. Mitigation: keep the old path as a redirect
+  for one minor version; add a contract test that asserts every agent
+  loads what it needs.
 
-| # | Item | Effort | Depends on | Mini-proposal |
-|---|---|---|---|---|
-| 15 | Gate-schema consistency test | S–M | None | Export the `required` field list from `gate-validator.js` as a module constant; write a test that parses the fenced JSON blocks in `.claude/rules/gates.md` and asserts every required field is present in each example. Guards against spec drift. |
-| 16 | Phase-shape test for the `implement` skill | S | None | Assert `.claude/skills/implement/SKILL.md` contains each phase heading and references `npm test`. Small table-driven test. Extend later to `audit-phases.md` if valuable. |
-| 18 | Presentation layout helpers + named constants | M | None | Extract `pageTemplate(pres, {title, subtitle, footer}, bodyBuilder)`. Introduce named constants (`MARGIN`, `CARD_W`, `TITLE_SIZE`). Run the script before and after; diff the PPTX by slide-count and layout checksum. Do only when the file is next touched — don't schedule as standalone. |
+## Re-sequencing triggers
 
-**Estimated effort**: 3–5 days if done serially.
-**Infra changes**: None.
-**Parallelization**: All three are independent. Item 18 is discretionary — skip entirely if nobody edits presentation slides in this window.
+- **Any user-reported gate corruption** → bump B-14 (concurrency test)
+  and B-3 (error-class) to Batch 1.
+- **Any user-reported missed stoplist case** (someone ran `/quick` on
+  an auth change and the framework didn't catch it) → bump B-13 to
+  Batch 1.
+- **Any externally observed drift between claude and codex framework
+  outputs** → bump B-25 (behavioural parity) up two batches.
 
-**Risks**:
-- Item 15's refactor of the `required` list into a module constant is a breaking change for any external code that requires `gate-validator.js` — currently nothing does (it's only invoked as a CLI hook), so this is safe. Verify before landing.
-- Item 18 is a layout refactor on a file with no visual regression tests. Mitigation: visual diff against the last generated PPTX.
+## Status (entry point for `/roadmap`)
 
----
+- **P0:** none.
+- **P1 quick wins:** 10 items, ~half a day total.
+- **P2 targeted:** 10 items, ~3–4 dev-days.
+- **P3 strategic:** 7 items, sequenced as future work.
+- **Parked:** 4 items with explicit reasoning.
 
-## Batch 4 — Month 2+ (discretionary)
-
-Two items that are worth having on the list but carry enough judgment or scope that they should wait.
-
-| # | Item | Effort | Pre-requisites | Notes |
-|---|---|---|---|---|
-| 17 | `context.md` amplification guardrails | M | Batch 2 item 9 landed | Changes agent-context semantics. Requires design review (principal agent or human). Current mitigation (archive on `/reset`) already bounds growth; this tightens the prompt-injection surface. |
-| 19 | Node coverage tool in CI | XS–S | None | `--experimental-test-coverage` in a separate `test:coverage` script; publish summary to CI log. Informational, not a quality gate. |
-
-**Risks**:
-- Item 17 is the most disruptive change on this roadmap. It touches orchestrator behavior and could regress Stage-3 (PM-question) flows. Don't pick it up without a deliberate design pass.
-- Item 19 — the `node:test` coverage output format is experimental and may change between Node versions; pin the reported numbers informally, don't gate on them.
-
----
-
-## Parked (carried forward)
-
-| # | Item | Blocker | Revisit trigger |
-|---|---|---|---|
-| 20 | End-to-end pipeline test | Claude Code lacks `--dry-run` | CC ships a dry-run / recorded-agent mode |
-| 21 | Dev-agent consolidation | Claude Code lacks `imports:` / `extends:` | CC adds shared-fragment support for agent frontmatter |
-| 22 | Stage-5 gate write lock | Claude Code agents currently serialize file writes | CC documents or ships parallel write semantics |
-
----
-
-## Roadmap Risks
-
-1. **Claude Code platform drift**. The framework pins to CC semantics for hooks, agent frontmatter, and Agent Teams. A breaking change to any of these could require coordinated updates across `.claude/agents/*.md`, `.claude/settings.json`, and potentially `gate-validator.js`. Mitigation: CI runs the full test suite on every push; frontmatter validation catches schema drift at PR time.
-2. **`sharp` CVE surface**. A critical native-binding CVE would require a devDep bump. With Batch 2 item 10 in place, CI surfaces this. Without it, the signal is a manual `npm audit`.
-3. **Over-scoping Batch 2 item 14 (ESLint rules)**. Adding too many rules at once risks surfacing a large cleanup task. Start with 3–4 rules with high true-positive value; hold the magic-numbers rule for a scoped pass on `build-presentation.js` only.
-4. **Batch 4 item 17 ambition**. Context-amplification mitigation is genuinely subtle — it sits at the intersection of security, observability, and agent context budget. Prefer to leave it parked until a concrete incident or a platform feature (e.g., CC memory scopes) makes the right design clearer.
-5. **Re-sequencing triggers**:
-   - A bug reported in `gate-validator.js` → elevate Batch 2 item 9 (try/catch wrapper) to immediate; add a regression test.
-   - `sharp` or `pptxgenjs` release that breaks `node --check` but is caught by Batch 2 item 12 → keep the runtime smoke test; do not drop to syntax-only.
-   - Claude Code ships `imports:` / `extends:` → unpark item 21 and plan a consolidation PR; do not attempt before the feature lands.
-
----
-
-## Summary
-
-| Batch | Window | Items | Effort total |
-|---|---|---|---|
-| 1 | This week | 7 | 1–2 hours |
-| 2 | Weeks 1–2 | 7 | 1–2 days |
-| 3 | Weeks 3–6 | 3 | 3–5 days |
-| 4 | Month 2+ | 2 | Variable |
-| Parked | — | 3 | — |
-
-Total: **19 actionable items, 3 parked.** Nothing on this roadmap is urgent; the framework is in a maintain-and-refine phase.
+Re-run the audit (`/audit`) after Batch 3 lands; expect the theme list
+to shrink from 5 to 2–3.

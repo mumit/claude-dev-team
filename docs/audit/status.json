@@ -1,6 +1,6 @@
 {
-  "started": "2026-04-16T22:34:00Z",
-  "scope": "full",
+  "started": "2026-05-07T00:00:00Z",
+  "scope": "full (claude-dev-team, with codex-dev-team comparison context)",
   "phases": {
     "phase-0": "complete",
     "phase-1": "complete",
@@ -8,5 +8,11 @@
     "phase-3": "complete"
   },
   "current_phase": "complete",
-  "completed": "2026-04-16T23:15:00Z"
+  "completed": "2026-05-07T00:30:00Z",
+  "prior_audit_archive": "docs/audit/archive-2026-04-16/",
+  "p0_count": 0,
+  "p1_count": 10,
+  "p2_count": 10,
+  "p3_count": 7,
+  "parked_count": 4
 }

@@ -1,139 +1,145 @@
 # 03 — Convention Compliance
 
-## Methodology
-
-The project documents conventions in several places:
-
-- `.claude/skills/code-conventions/SKILL.md` — naming, docstrings, error handling, SQL, secrets
-- `.claude/skills/api-conventions/SKILL.md`, `security-checklist/SKILL.md`, `review-rubric/SKILL.md` — target-project concerns
-- `.claude/rules/pipeline.md`, `gates.md`, `escalation.md`, `orchestrator.md`, `compaction.md` — orchestration rules
-- `CONTRIBUTING.md` — branch → `npm test` → PR
-
-Two audiences need to be kept distinct:
-
-1. **Target-project conventions** (the code that generated agents emit). The `code-conventions` and `api-conventions` skills explicitly target this audience. They are *not* binding on this repo's own JS.
-2. **Framework-internal conventions** (the code and markdown in this repo). These are mostly implicit, with a few enforced by tests (`tests/frontmatter.test.js`) and ESLint (`eslint.config.js`).
-
-This file audits (2) only. It does not attempt to lint the framework against rules intended for target projects.
-
-Prior findings from earlier audits have been re-verified. The April 2026 health check landed most of the prior fixes; the remaining items are recorded below.
-
----
-
-## Findings
-
-### Category: Code Style & Linting
-
-**Finding 1 — ESLint config is a stub (persists)**
-- File: `eslint.config.js`
-- Observed: Uses `@eslint/js` flat config with `js.configs.recommended`. No custom rules beyond the ESLint defaults. No style rules (quotes, semis, spacing), no complexity caps, no import-order rules, no file-level ignores beyond `node_modules/`.
-- Assessment: Functional — catches genuine errors like unused vars and unreachable code. But the documented conventions in `.claude/skills/code-conventions/SKILL.md` (no magic numbers, kebab-case files, JSDoc on public functions) are *not* mechanically enforced.
-- Suggested fix: Either (a) accept the stub as intentional and remove the `lint` step's claim of "enforcing conventions", or (b) add a handful of opinionated rules: `no-console` (off for scripts), `no-magic-numbers` (warn, with allowed `[0, 1, -1]`), `require-jsdoc` for exported functions in `docs/build-presentation.js`.
-- Confidence: **MEDIUM** (design call; the current stub is defensible)
-
-**Finding 2 — `npm run lint:frontmatter` is a misleading script name**
-- File: `package.json:10`
-- Observed: `"lint:frontmatter": "node --test tests/frontmatter.test.js"`. The script name suggests a linter; it actually runs a single test file.
-- Assessment: Works, but the `lint:*` namespace implies a lint tool. A future contributor might look for a `.frontmatterrc` or a real linter.
-- Suggested fix: Rename to `"test:frontmatter"` for consistency with `test:integration`, or leave and add a 1-line comment in `package.json` (`"// lint:frontmatter": "alias to the frontmatter validation suite"`).
-- Confidence: LOW (cosmetic, no functional impact)
-
-### Category: Error Handling
-
-**Finding 3 — `gate-validator.js` can still throw on unreadable gates dir**
-- File: `.claude/hooks/gate-validator.js:22-29`
-- Observed: `fs.readdirSync(GATES_DIR)` and `fs.statSync(...)` are unguarded. If the directory exists but is unreadable, or a gate file is removed between `readdirSync` and `statSync`, the hook throws an unhandled exception. The orchestrator then sees a non-zero exit from the hook, which is indistinguishable from a legitimate FAIL.
-- Assessment: Unlikely on a single-user dev machine, but the hook is the framework's single source of truth for pipeline control flow. Defensive error handling is cheap here.
-- Suggested fix: Wrap the `readdirSync`/`statSync` loop in a try/catch; on filesystem error, print `[gate-validator] WARN: could not read gates dir (<err>); treating as empty` and `process.exit(0)`.
-- Confidence: MEDIUM
-
-**Finding 4 — Dev-agent PostToolUse lint hooks capture but still `|| true`**
-- Files: `.claude/agents/dev-backend.md:21`, `.claude/agents/dev-frontend.md:19`, `.claude/agents/dev-platform.md:19`
-- Observed: Each dev agent now runs `cd $(git rev-parse --show-toplevel) && npm run lint --if-present 2>&1 | tee -a pipeline/lint-output.txt || true`. Output is now persisted (resolution of prior Finding 11), which is an improvement. The `|| true` still suppresses the exit code.
-- Assessment: Intentional — target projects may not have a lint script, and the framework must not wedge on their behalf. Output is now captured to `pipeline/lint-output.txt`, which satisfies the "never swallow errors silently" spirit of the convention.
-- Suggested fix: None, but consider a Stage-5 checklist item in `review-rubric` asking reviewers to glance at `pipeline/lint-output.txt` if it exists.
-- Confidence: LOW (already mitigated)
-
-### Category: Security & Secrets
-
-**Finding 5 — `.gitignore` is comprehensive (resolved)**
-- File: `.gitignore`
-- Observed: Covers `node_modules/`, `*.pptx`, `pipeline/gates/*.json` (except schema), `*.local.*`, `.env*`. Prior audit's finding of "no .gitignore at all" is resolved.
-- Assessment: No action needed.
-- Confidence: HIGH
-
-**Finding 6 — No TODO/FIXME/HACK markers in production code**
-- Verified by grep across the repo excluding `docs/audit/`. The single match in `docs/build-presentation.js:539` is the string literal `"TODOs older than 30 days"` inside a health-check slide — content, not a debt marker.
-- Assessment: Clean.
-- Confidence: HIGH
-
-### Category: Architecture Consistency
-
-**Finding 7 — CLAUDE.md is near-empty**
-- File: `CLAUDE.md` (5 lines, mostly comments)
-- Observed: The file contains framework-pattern boilerplate ("customize here") but no project-specific guidance for Claude when working on *this* repo. The orchestrator rules live under `.claude/rules/`, which is the framework's own territory — meant to be propagated into target projects by bootstrap. For this repo's own maintenance, Claude gets no project-level instructions.
-- Assessment: Mild gap. The audit workflow and the health-check workflow each re-derive their own context from `.claude/references/`. But a contributor using Claude to edit this repo has no single pinned "how we work here" doc.
-- Suggested fix: Add a short section to `CLAUDE.md` covering: (a) this repo contains the framework only; generated target-project code does not live here, (b) run `npm test` before committing, (c) follow Conventional Commits, (d) do not add runtime dependencies, (e) point to `CONTRIBUTING.md` for process.
-- Confidence: MEDIUM
-
-**Finding 8 — Status command now includes Stage 3 (resolved)**
-- File: `.claude/commands/status.md`
-- Observed: Stage 03 (Pre-Build Clarification) now appears in the dashboard template. Prior finding resolved.
-- Confidence: HIGH
-
-**Finding 9 — `pipeline-status` command renamed to `pipeline-context` (resolved)**
-- File: `.claude/commands/pipeline-context.md`
-- Observed: The naming overlap with `/status` is gone; `pipeline-context` now clearly names its purpose (pre-compaction state dump).
-- Confidence: HIGH
-
-**Finding 10 — `build-presentation.js` now has JSDoc (resolved)**
-- File: `docs/build-presentation.js`
-- Observed: 19 JSDoc blocks covering the 17 public helpers and the 2 entry points. Prior finding (684 undocumented lines) resolved.
-- Confidence: HIGH
-
-### Category: Agent & Skill Consistency
-
-**Finding 11 — PM agent skill load-out matches role (still clean)**
-- Files: `.claude/agents/pm.md`, `.claude/agents/principal.md`, `.claude/agents/dev-*.md`
-- Observed: PM loads no engineering-review skills — correct, PM reviews requirements. Principal loads `security-checklist` and `api-conventions` — correct. The three devs load `code-conventions`, `review-rubric`, `security-checklist`.
-- Assessment: Role-aligned. No drift detected since the prior audit.
-- Confidence: HIGH
-
-**Finding 12 — Three dev agents share near-identical frontmatter & hooks**
-- Files: `.claude/agents/dev-backend.md`, `dev-frontend.md`, `dev-platform.md`
-- Observed: Each agent's YAML frontmatter differs only by `name`, `description`, and the file-tree scope it owns. PostToolUse hooks are byte-identical across all three.
-- Assessment: Known duplication; parked item #18 on the roadmap tracks this. Blocked on Claude Code not yet supporting `imports:` / `extends:` in agent frontmatter.
-- Confidence: HIGH (known, parked)
-
-### Category: Repository Hygiene
-
-**Finding 13 — Two prior audit cycles' outputs checked into the repo**
-- Files: `docs/audit/*.md`, `docs/audit/health-check-2026-04.md`
-- Observed: The repo tracks audit outputs. The `status.json` is also tracked. Running `/audit` mutates these files, which affects the working tree during audit runs.
-- Assessment: Intentional (audit trail is useful). But it means that if a contributor runs `/audit` locally without meaning to commit, they'll produce a dirty working tree. The stop-hook `~/.claude/stop-hook-git-check.sh` then asks them to commit.
-- Suggested fix: Consider moving transient audit state (`status.json`) under `.gitignore` and keeping only the finished phase markdown files tracked. Or leave as-is and document the expectation in `.claude/commands/audit.md`.
-- Confidence: LOW
-
----
-
-## Resolved Since Prior Audit
-
-Verified cleared against prior `03-compliance.md` findings:
-
-- Missing `.gitignore` → added, comprehensive.
-- No JSDoc in `build-presentation.js` → 19 JSDoc blocks present.
-- Stage 3 missing from `/status` → added.
-- `pipeline-status` / `status` overlap → renamed to `pipeline-context`.
-- Dev lint hooks silently discard output → now `tee` into `pipeline/lint-output.txt`.
-
-## Possibly Intentional Deviations
-
-1. **`SKILL.md` SCREAMING_CASE inside kebab-case dirs** — Claude Code convention, not a project choice.
-2. **`AGENTS.md` duplicating CLAUDE.md** — Intentional compatibility shim for non-Claude-Code tools.
-3. **`|| true` in lint hooks** — Pragmatic; output is now captured so visibility is retained.
-4. **ESLint stub** — Defensible on a tiny JS surface area (~900 LOC excluding tests).
-5. **Two near-identical dev agents** — Parked; platform-blocked on `imports:` support.
+_Verified by: `npx eslint`, `npm test`, `npm run lint:frontmatter`,
+`npm run validate`, `npm run parity:check`, `diff` on hook pairs._
 
 ## Summary
 
-Compliance posture is **solid and improving**. Of the original audit's 11 compliance findings, **7 are fully resolved** by April 2026 health-check work (gitignore, JSDoc, Stage 3 visibility, command rename, lint hook output capture, plus architecture-consistency items). The remaining open items (ESLint stub, lint-script naming, gate-validator defensive error handling, near-empty CLAUDE.md) are all low-to-medium severity and have clear, small fixes. Nothing here is blocking or architectural.
+Almost everything passes. The headline is **two genuine compliance findings**
+and a handful of "possibly intentional" deviations that warrant a one-line
+documentation fix rather than a code change.
+
+| Check | Result |
+|---|---|
+| ESLint (`scripts/`, `.claude/hooks/`, `tests/`) | clean — zero violations |
+| Frontmatter schema (agents + skills) | clean — 90/90 assertions pass |
+| Gate JSON schemas (`npm run validate`) | clean |
+| Parity vs codex-dev-team (`npm run parity:check`) | clean (file presence + config keys) |
+| `diff .claude/hooks/gate-validator.js scripts/gate-validator.js` | byte-identical now |
+| `diff .claude/hooks/approval-derivation.js scripts/approval-derivation.js` | byte-identical now |
+| `dependencies` in `package.json` | empty (zero runtime deps, as documented) |
+| TODO/FIXME/HACK in source | none (only one in `coding-principles.md` that is itself the rule banning them) |
+
+## Findings
+
+### C-01 — Hook scripts duplicated across two paths with no test pinning them — MEDIUM
+
+**Files:**
+- `.claude/hooks/gate-validator.js` ↔ `scripts/gate-validator.js`
+- `.claude/hooks/approval-derivation.js` ↔ `scripts/approval-derivation.js`
+
+**Convention:** Source of truth should exist exactly once. The repo's own
+coding principles (`.claude/rules/coding-principles.md` §3) say "match
+existing style; don't refactor things that aren't broken" — but they don't
+address whether two copies of the same file is OK.
+
+**Deviation:** Both pairs are byte-identical at HEAD, but git log shows at
+least one commit in the recent past that touched only one of the two. The
+two-copy pattern is intentional (the hook copies are loaded by the Claude
+Code harness via `settings.json`, the script copies are entry points for
+`scripts/claude-team.js` / npm scripts) — but **no test asserts they remain
+byte-identical**. Drift is undetected until production behaviour diverges.
+
+**Suggested fix:** Add `tests/hook-parity.test.js` that reads both files
+with `fs.readFileSync` and asserts `crypto.createHash('sha256')` equality.
+~10 lines. Alternative: replace one with a `require('../scripts/...')` re-
+export, but that complicates Claude Code hook loading semantics; the test
+is safer.
+
+**Confidence: HIGH** — diff currently empty, but no enforcement.
+
+### C-02 — `parity-check.js` references `budget` config but no `scripts/budget.js` exists — MEDIUM
+
+**File:** `scripts/parity-check.js:8` and `:68`
+
+**Convention:** `pipeline.md` Stage 0 documents budget tracking writing
+`pipeline/budget.md` with running totals at every stage boundary.
+`config.example.yml` exposes `budget.enabled` / `budget.tokens_max` /
+`budget.wall_clock_max_min`.
+
+**Deviation:** No script in `scripts/` actually implements the tracker.
+`parity-check.js` validates that the config key exists (which it does) but
+nothing writes `pipeline/budget.md`. The sibling repo
+`../codex-dev-team/scripts/budget.js` is a 100-LOC implementation. The
+orchestrator agent is therefore being told to do something the framework
+provides no tooling for; in practice the budget gate never fires.
+
+**Suggested fix:** Port `codex-dev-team/scripts/budget.js` (it has no Codex-
+specific dependencies). Wire `claude-team.js` so `claude-team budget init`,
+`claude-team budget update <stage> <tokens> <minutes>`, `claude-team budget
+check` all work. Add tests modelled on the existing pattern. Estimated
+effort: S (~1 day, 1 PR).
+
+This is also tracked as `S-04` (security/process) and `Q-01` (code quality)
+because the documented behaviour does not match shipped behaviour.
+
+**Confidence: HIGH** — verified by `ls scripts/` against doc claims.
+
+### C-03 — `approval-derivation` PostToolUse hook matcher is `Write|Edit` (unfiltered) — LOW
+
+**File:** `.claude/settings.json` lines 38–46.
+
+**Convention:** Claude Code matchers can scope to a path, so a hook that
+only cares about one directory should not fire on every save.
+
+**Deviation:** The matcher fires on every `Write` and `Edit` anywhere in
+the project. The hook itself short-circuits in <10 ms when the path isn't
+under `pipeline/code-review/` (verified in `approval-derivation.js`
+`isReviewFile()` at lines ~130–143). The current settings cannot express
+"match a path glob inside Write|Edit", so this is a Claude-Code-side
+limitation rather than a framework defect — but the framework does not
+document it.
+
+**Suggested fix:** Document the rationale in a comment in
+`settings.json` (it's plain JSON; comments are not allowed) or, better, a
+note in `.claude/hooks/README.md` (which doesn't exist yet — see D-02).
+Track as P-02 in the perf section since it's a real-but-tiny cost on every
+save during normal dev work.
+
+**Confidence: MEDIUM** — micro-cost, not a defect.
+
+## Possibly intentional deviations
+
+### Two hook script copies (C-01 above)
+Genuinely intentional; the issue is lack of test enforcement, not the
+duplication itself.
+
+### `docs/build-presentation.js` lives in `docs/` rather than `scripts/`
+This 934-LOC build-time script is in `docs/` because its outputs (the
+Reveal.js deck) are docs artefacts, not pipeline tools. Defensible. The
+test surface around it is thin (one smoke test, no unit coverage) — see
+T-03.
+
+### Reviewer agent has `Write` permission
+The reviewer (`.claude/agents/reviewer.md`) lists `Write` in `tools`. At
+first glance this contradicts the READ-ONLY rule. The policy is enforced
+by *path*, not by tool scope: reviewers can `Write` to
+`pipeline/code-review/by-<name>.md`, but the rules forbid them writing to
+`src/`, and the approval-derivation hook ignores any review file content
+that doesn't land in `pipeline/code-review/`. Tightening this to a
+strictly-scoped tool would require Claude Code to support per-path tool
+scopes. Acceptable.
+
+### v2.3 `dev-platform` split mentioned across many files
+Every reference checked is correct. `dev-qa` owns Stage 6 + tests;
+`dev-platform` owns 4.5a (lint/SCA), CI, and Stage 8 deploy;
+`security-engineer` owns 4.5b (conditional veto). No stale "dev-platform
+runs the test suite" sentences remain.
+
+### Missing `dependencies` field in `package.json`
+The deliberate zero-runtime-dep stance. `pptxgenjs`, `react`, `sharp` etc.
+are devDependencies because they are only used by `docs/build-presentation.js`
+when an author rebuilds the deck. Defensible; perhaps note this stance in
+README or CONTRIBUTING so a future contributor doesn't "fix" it.
+
+## What's well-enforced (preserve)
+
+- **Frontmatter schema test** catches missing `name`, `description`,
+  `tools`, `model`, `permissionMode` on every agent and skill at CI time.
+- **Parity check** catches missing helper scripts, schemas, templates,
+  or config sections vs the codex sibling.
+- **Gate validator** is itself unit-tested with 26 assertions including
+  bypassed-escalation detection (which solves a v2.0 silent-violation
+  bug).
+- **Conventional Commits** is observed at 62%; the remaining 38% are
+  merge commits, which is acceptable.

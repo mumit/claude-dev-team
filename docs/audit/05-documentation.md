@@ -1,120 +1,118 @@
-# 05 — Documentation Health
+# 05 — Documentation Gaps
 
-## Documentation Inventory
+## README quality — complete
 
-| File | Lines | Audience | Purpose |
-|---|---|---|---|
-| `README.md` | 297 | First-time user | Project pitch, install, "When to Use What", links |
-| `CONTRIBUTING.md` | 68 | Framework contributor | Prerequisites, setup, tests, project structure, bootstrap rules |
-| `AGENTS.md` | 200 | External tools / humans | Team roster, commands, workflow summary; compatibility shim |
-| `CLAUDE.md` | 5 | Claude (this repo) | Project instructions — **near-empty** |
-| `docs/lifecycle.md` | 197 | Framework user | End-to-end walkthrough of a pipeline run |
-| `docs/faq.md` | 147 | Framework user | Common questions, failure modes |
-| `docs/audit/` | N×N | Self-audit | Phase outputs + health-check history |
-| `.claude/rules/*.md` | — | Orchestrator (Claude) | Machine-read process definitions (5 files) |
-| `.claude/references/audit-phases.md` | — | `/audit` command | Phase definitions |
-| `.claude/skills/*/SKILL.md` | — | Claude, task-local | Passive knowledge loaded by skill triggers (6 skills) |
-| `.claude/agents/*.md` | — | Claude, per-agent | Role, skills, hooks (5 agents) |
-| `.claude/commands/*.md` | — | Claude, per-command | Slash-command prompt templates (18 commands) |
+`README.md` covers prerequisites, install, customisation, the slash-command
+table (26 use cases), the automation CLI, project layout with version
+markers, and an agent/model table. The known-limitations section is honest.
+Two small gaps:
 
-Everything that should be documented is documented, with two exceptions noted below. The main axis of improvement since the prior audit is coverage, not quality.
+- Does not link `EXAMPLE.md` as the recommended first-read after install.
+  A user running `bash bootstrap.sh` then opening Claude doesn't
+  necessarily know where to look next; sending them through `EXAMPLE.md`
+  would smooth that hand-off. (Finding D-04.)
+- Does not mention `.claude/config.example.yml` or that the user must pick
+  a `deploy.adapter` value before Stage 8. The first user who runs
+  `/pipeline` end-to-end discovers this only at deploy time. (D-04 same
+  fix.)
 
----
+## Component documentation
 
-## What's Covered Well
+| Component | Where documented | Quality |
+|---|---|---|
+| 8 agents | `AGENTS.md`, `.claude/agents/*.md` (frontmatter), README table | good |
+| 23 slash commands | README table, each command's frontmatter, `docs/tracks.md` | good |
+| 6 skills | `.claude/skills/*/SKILL.md`, mentioned in CONTRIBUTING.md | partial — no master list anywhere |
+| 4 deploy adapters | `.claude/adapters/README.md` + per-adapter `.md` | good |
+| 7 rules | `.claude/rules/*.md`, cross-linked from commands | good |
+| 2 hooks | dense JSDoc in source | good but no `.claude/hooks/README.md` |
+| 11 templates | `templates/*.md` files exist on disk; **no list, no purpose-per-template anywhere** | partial |
+| 11 JSON schemas | `schemas/*.schema.json` carry no `description` fields | partial |
 
-- **README as entry point**: section headers for prerequisites, install, when-to-use-what decision table, pipeline overview with checkpoints, audit workflow, project structure, agent-model rationale, gate system, customisation, known limitations. Reads cold.
-- **CONTRIBUTING.md** (new since prior audit): prerequisites (Node 20+, git, rsync, Claude Code), setup, test commands, project structure table, change workflow, test conventions, bootstrap rules. Resolves the prior audit's "how do I test changes to the framework?" gap.
-- **Lifecycle walkthrough** (`docs/lifecycle.md`): narrates one feature going through the eight stages with sample gate files. Concrete, not abstract.
-- **FAQ** (`docs/faq.md`): covers the common confusions — "does this write code?", "what if a dev fails?", "can I skip stages?", "how do I reset?".
-- **Machine-readable rules**: `.claude/rules/gates.md`, `pipeline.md`, `escalation.md`, `compaction.md`, `orchestrator.md` are explicit, schema-like, and read as contracts. Stage duration table added in Batch 4.
-- **build-presentation.js** is now JSDoc'd (19 blocks across the public surface). Prior finding resolved.
+## API documentation
 
-## Documentation Gaps
+The framework exposes four de-facto APIs:
 
-### Finding 1 — `CLAUDE.md` is near-empty
-- File: `CLAUDE.md` (5 lines)
-- Observed: Contains only the bootstrap-generated placeholder comment. No project-specific guidance for Claude when operating on *this* repo.
-- Impact: A contributor who opens Claude Code in this repo gets no pinned context about "this is the framework repo, not a target project". The first thing Claude does in an audit or implement session is re-discover this from scratch.
-- Suggested fix: 15–30 line `CLAUDE.md` covering: repo is framework-only (no target-project code here), run `npm test` before committing, Conventional Commits required, no new runtime deps, pointer to `CONTRIBUTING.md` for process, pointer to `.claude/references/audit-phases.md` for audit runs.
-- Severity: Low
+1. **Slash commands** — fully documented (frontmatter + README + tracks.md).
+2. **Gate JSON contract** — base shape documented in
+   `.claude/rules/gates.md`; per-stage extras documented inline. Schemas
+   themselves carry no `description` fields. Authors of new gates have to
+   reverse-engineer from existing examples.
+3. **Agent frontmatter contract** — fully documented (CONTRIBUTING.md +
+   tested by `tests/frontmatter.test.js`).
+4. **Hook event contract** — explained only in source comments. There is
+   no `.claude/hooks/README.md` describing which events fire, what stdin
+   they receive, or what exit codes mean for which events. (Finding D-02.)
 
-### Finding 2 — No "Concepts" primer distinguishing commands / skills / rules / agents / hooks
-- Observed: The README lists them but never defines them as a set. A newcomer has to read multiple files to form the mental model:
-  - Agents are named personas with tool allow-lists and preloaded skills.
-  - Commands are explicit user-triggered prompts.
-  - Skills are passive knowledge packs loaded by context or trigger phrases.
-  - Rules are machine-read contracts the orchestrator honors.
-  - Hooks are shell commands Claude Code fires on events.
-- Impact: Real question asked frequently enough to be in the prior audit's onboarding test. Still unanswered in docs.
-- Suggested fix: Add a "Concepts" section to README (or a `docs/concepts.md` linked from README) with a one-sentence definition for each of the five.
-- Severity: Low (persistent)
+## Inline documentation
 
-### Finding 3 — `build-presentation.js` dependency pinning still fragile
-- Files: `package.json`, `docs/build-presentation.js`
-- Observed: devDependencies now pin major/minor: `pptxgenjs ^3.12.0`, `react ^18.3.1`, `sharp ^0.33.5`. Lockfile is committed.
-- Assessment: Resolved vs. the prior audit ("no package.json to pin versions"). A future React 19 update would still require coordinated changes; that's normal package-management, not a doc gap.
-- Severity: Resolved
+**Dense / good:**
+- `.claude/hooks/gate-validator.js` — 27-line top-of-file JSDoc covering
+  exit codes, the v2.1 escalation-bypass sweep, lessons-learned format
+  validation.
+- `.claude/hooks/approval-derivation.js` — ~50 lines of header explaining
+  the trigger, REVIEW marker grammar, file-locking model.
+- `.claude/rules/pipeline.md` — exhaustive per-stage breakdown with
+  read-first / allowed-writes / artefact / template / gate shape.
 
-### Finding 4 — AGENTS.md and CLAUDE.md drift risk
-- Files: `AGENTS.md`, `CLAUDE.md`, `.claude/rules/orchestrator.md`
-- Observed: AGENTS.md summarizes the same orchestration model that `.claude/rules/orchestrator.md` specifies. Today they agree. When orchestrator.md changes, AGENTS.md must be updated manually — there's no linkage.
-- Suggested fix: Either (a) add a note at the top of AGENTS.md: "Authoritative source is `.claude/rules/orchestrator.md`; this file is a human-readable mirror" (partly done; the shim note exists), or (b) generate the relevant sections of AGENTS.md from the rules files at build time.
-- Severity: Low
+**Sparse:**
+- `schemas/*.schema.json` — zero `description` fields. Anyone writing a
+  custom gate must read both the relevant `.claude/rules/*.md` and one or
+  two existing gate files in `pipeline/gates/`. (D-01.)
+- `templates/*.md` — files exist but no `templates/README.md`. A
+  contributor must `ls templates/` and infer purpose from filename.
+  (D-03.)
 
-### Finding 5 — Audit outputs describe outdated state right after health-checks
-- Files: `docs/audit/03-compliance.md`, `04-tests.md`, `05-documentation.md` (before this write)
-- Observed: Prior audit files were written before the April 2026 health-check landed 15 items. Without re-running `/audit`, readers see findings that are already resolved. This audit re-run fixes the three Phase-1 files; the Phase-2 and Phase-3 files will be rewritten in subsequent phases of this audit.
-- Severity: Meta — this audit is the fix.
+**No three-read code paths observed.** `claude-team.js`, both hooks, and
+`bootstrap.js` all read linearly.
 
-### Finding 6 — No changelog
-- Observed: The repo has 38 commits with Conventional Commit subjects but no `CHANGELOG.md`. Version is `1.0.0` in `package.json` — static across all commits.
-- Impact: Low. The project is a single-maintainer framework and is not published. But if it's ever distributed as a template that target projects pin to, version + changelog become necessary.
-- Severity: Very low (future concern)
+## Stale docs
 
----
+The version matrix is **consistent** (`VERSION` = `2.6.0`,
+`package.json.version` = `2.6.0`, README references match). The v2.3 split
+of `dev-platform` into `dev-qa` + `security-engineer` is correctly
+reflected in every doc file checked. No "v1 commands that no longer exist"
+references remain.
 
-## Inline Documentation
+One mild anachronism noted in compliance check (C-X), already corrected:
+`docs/audit/01-architecture.md` says "invoked by dev-platform at Stage 8"
+which is correct (deploy stays with platform after the v2.3 split) but
+could mislead a quick reader into thinking QA still runs deploy.
 
-### `.claude/hooks/gate-validator.js` (90 LOC)
-- Top-of-file block comment explains purpose, trigger point, and exit-code semantics. ✅
-- Exit codes 0/1/2/3 are commented at call sites. ✅
-- No function-level JSDoc — the file is a linear script with no functions. Appropriate.
-- `mtime` sorting (picking latest gate) is not commented. Minor; one line would help.
+The prior audit at `docs/audit/archive-2026-04-16/` is now stale by
+construction; that's expected, and the archive label makes it obvious.
 
-### `docs/build-presentation.js` (686 LOC)
-- JSDoc now on 19 public helpers including `icon()`, `addCard()`, `addBullets()`, `slideBg()`, per-slide functions, and `main()`.
-- Layout constants (`SAFE_MARGIN`, palette colors) have descriptive names; design-intent comments are sparse but not missing.
+## Onboarding test (new TELUS engineer, 30 minutes, Day 1)
 
-### `bootstrap.sh` (168 LOC)
-- Section headers (`# === Step N ===`) demarcate phases.
-- Echo statements narrate each step to the user.
-- rsync strategy and `*.local.*` preservation are commented.
+| Time | Action | Friction |
+|---|---|---|
+| 0–2 min | Clone, read README | Smooth. Version, prereqs, install path clear. |
+| 2–5 min | `bash bootstrap.sh ../my-project` | Smooth. Idempotency note in README is reassuring. |
+| 5–10 min | Customise stack (skills, agents, deploy) | Mild — README §Customization names the three files but does not link a worked example. |
+| 10–15 min | Run `/pipeline "Add login"` | **Friction:** doesn't know what to expect at each checkpoint. README mentions checkpoints but the experience is best understood by reading EXAMPLE.md, which README does not foreground. |
+| 15–25 min | Pipeline reaches Stage 5 | **Friction:** the reviewer agent writes a review file; the gate magically updates. The user wants to write their own reviewer feedback but doesn't know that the `REVIEW: APPROVED` / `REVIEW: CHANGES REQUESTED` markers are required. The contract is in `.claude/rules/pipeline.md` Stage 5 and in `templates/review.md`, but not on the path the user is travelling. |
+| 25–30 min | Pipeline reaches Stage 8 | **Friction:** if the user did not edit `.claude/config.yml` to choose a `deploy.adapter`, Stage 8 escalates. README mentions adapters but does not show the YAML one-liner the user needs. |
 
----
+### Recommended fixes for onboarding
 
-## Onboarding Test
+- README: add a "First 30 minutes" section pointing the reader at
+  `EXAMPLE.md` and at the adapter config one-liner. (D-04.)
+- New `.claude/hooks/README.md` so a contributor adding a hook has a
+  reference point. (D-02.)
+- New `templates/README.md` listing the 11 templates and their
+  one-line purposes. (D-03.)
+- Add `description` fields to `schemas/*.schema.json` so a gate-author
+  sees field purpose in their editor's schema-aware tooling. (D-01.)
 
-A dev expecting to learn the framework and make a small change:
+## Doc strengths (preserve)
 
-1. **"Where's the code?"** — README now explains "this is a framework / template" in the opening paragraph. CONTRIBUTING.md restates it. Resolved.
-2. **"How do I test changes to the framework?"** — `npm test`, `npm run test:integration`, `npm run lint` are all documented in CONTRIBUTING.md. Resolved.
-3. **"What's the difference between commands / skills / rules / agents / hooks?"** — **Still open** (see Finding 2).
-4. **"How do I run the presentation builder?"** — `node docs/build-presentation.js` + `npm install` handles it; devDeps are pinned. Resolved.
-5. **"Can I modify agent definitions safely?"** — `tests/frontmatter.test.js` catches schema regressions; CONTRIBUTING.md points to it. Resolved.
-6. **"Where do I write a new slash command?"** — Still implicit. Adding a one-paragraph "how to add a command/skill/agent" section to CONTRIBUTING.md would close this.
-
-Three of six previously open onboarding gaps remain: concepts primer, how-to-add-a-command, and CLAUDE.md emptiness. All low-severity, all small writes.
-
----
-
-## Recommendations
-
-- **P2** — Add "Concepts" section to README or a new `docs/concepts.md`. Defines agent / command / skill / rule / hook in one sentence each.
-- **P2** — Expand `CLAUDE.md` to ~30 lines of repo-specific guidance.
-- **P3** — Extend `CONTRIBUTING.md` with "Adding a new command / skill / agent" how-to (3 short sections, ~40 lines).
-- **P3** — Add a header note to `AGENTS.md` clarifying it mirrors `.claude/rules/orchestrator.md` and must be kept in sync.
-
-## Summary
-
-Documentation quality is **above average** and materially better than at the prior audit. Additions of `CONTRIBUTING.md`, JSDoc on `build-presentation.js`, devDep pinning, and the CI/tests/frontmatter-validation infrastructure each close specific prior findings. The remaining gaps are all low-severity, small-fix items — principally the near-empty `CLAUDE.md` and the absence of a "Concepts" primer — neither of which blocks anything.
+- **Version markers throughout** (`(v2.3+)`, `(v2.4+)`, `(v2.6+)`) keep
+  doc files honest about when features arrived.
+- **Per-release deep-dives** (`docs/releases/v2.x.md`) give upgrade-time
+  readers exactly the right granularity.
+- **Migration guide** at `docs/migration/v1-to-v2.md` exists and is
+  accurate.
+- **Hooks self-document via JSDoc** rather than relying on external
+  prose; the source is the source of truth.
+- **Conventions enforced by tests** (frontmatter, parity, gate JSON)
+  prevent docs from drifting into fiction.
