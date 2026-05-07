@@ -68,7 +68,7 @@ None. The audit found no critical issues.
 | **B-3 [DONE]** | Distinguish error classes in `gate-validator.js` so `EACCES` exits 1 (FAIL) instead of 0 (PASS) | Theme 3 | XS | Medium — silent PASS on permission error could hide real failures | HIGH |
 | **B-4 [DONE]** | Add `description` fields to `schemas/*.schema.json` (one line each) | Theme 4 | XS | Low — improves contributor UX | HIGH |
 | **B-5 [DONE]** | Write `templates/README.md` listing the 11 templates with one-line purpose each | Theme 4 | XS | Low — improves contributor UX | HIGH |
-| **B-6** | Write `.claude/hooks/README.md` documenting hook events + exit codes | Theme 4 | XS | Low — improves contributor UX | HIGH |
+| **B-6 [DONE]** | Write `.claude/hooks/README.md` documenting hook events + exit codes | Theme 4 | XS | Low — improves contributor UX | HIGH |
 | **B-7** | README "First 30 minutes" addition: link EXAMPLE.md, show adapter one-liner | Theme 4 | XS | Low — improves first-run UX | HIGH |
 | **B-8** | Add `LOCK_RETRIES` / `LOCK_DELAY_MS` rationale comments | Theme 3 | XS | Low — improves maintainability | HIGH |
 | **B-9** | Add 1:1 cross-check test between `.claude/commands/` and `claude-team.js` subcommands | Theme 1 | S | Medium — surfaces drift the user wouldn't catch | MEDIUM |
