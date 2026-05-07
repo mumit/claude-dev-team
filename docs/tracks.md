@@ -45,7 +45,7 @@ which the lighter tracks do not.
 
 When the user invokes `/pipeline <request>`:
 
-1. The orchestrator reads `.claude/rules/pipeline.md` Stage 0.
+1. The orchestrator reads `.claude/rules/pipeline-tracks.md` (Stage 0).
 2. It inspects the request for stoplist keywords and scope signals.
 3. If the request clearly fits a lighter track and doesn't cross the
    stoplist, the orchestrator **offers** the lighter track:

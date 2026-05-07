@@ -104,7 +104,10 @@ The `approval-derivation` hook reads only the `REVIEW:` marker;
 everything above it is human-readable context for the author. Optional
 `PATTERN:` lines flag practices worth promoting in the retrospective.
 Full grammar in [`templates/review-template.md`](templates/review-template.md)
-and [`.claude/rules/pipeline.md`](.claude/rules/pipeline.md) §Stage 5.
+and [`.claude/rules/pipeline-build.md`](.claude/rules/pipeline-build.md) §Stage 5
+(the pipeline rules were split into three files in the 2026-05-07 audit
+work — see [`.claude/rules/pipeline.md`](.claude/rules/pipeline.md) for
+the index).
 
 ---
 
@@ -168,9 +171,20 @@ node scripts/claude-team.js summary       # human-readable run summary
 node scripts/claude-team.js review        # derive Stage 5 approval gates
 node scripts/claude-team.js security      # run Stage 4.5b security heuristic
 node scripts/claude-team.js runbook       # check pipeline/runbook.md completeness
+node scripts/claude-team.js budget init   # init pipeline/budget.md (no-op when budget.enabled: false)
+node scripts/claude-team.js visualize     # write pipeline/diagram.md (Mermaid stateDiagram-v2)
+node scripts/claude-team.js checkpoint qa # evaluate Checkpoint C auto-pass after Stage 6
+
+# Lighter tracks refuse stoplist-matching changes (auth/PII/migrations etc.).
+# Use --force to bypass on a verified false positive:
+node scripts/claude-team.js quick "fix login redirect" --force
+
+# Hooks emit structured events when LOG_FORMAT=json is set:
+LOG_FORMAT=json node scripts/claude-team.js review
 
 # All commands also available as npm shims:
 npm run status | npm run doctor | npm run validate | npm run next
+npm run budget | npm run visualize
 ```
 
 For the full command list: `node scripts/claude-team.js help` or `npm run help`.
@@ -362,7 +376,10 @@ your-project/
 │   │   ├── audit-phases.md            # Detailed audit phase definitions
 │   │   └── audit-extensions-example.md
 │   ├── rules/
-│   │   ├── pipeline.md                # Stage-by-stage definition (9 stages)
+│   │   ├── pipeline.md                # Index — split below
+│   │   ├── pipeline-tracks.md         # Stage 0: track routing, stoplist, budget, async checkpoints
+│   │   ├── pipeline-core.md           # Stages 1, 2, 3, 9 + duration expectations
+│   │   ├── pipeline-build.md          # Stages 4–8: build, pre-review, peer review, test, sign-off, deploy
 │   │   ├── gates.md                   # Gate JSON schema
 │   │   ├── escalation.md              # Escalation rules
 │   │   ├── coding-principles.md       # Four dev principles (binding on all agents)

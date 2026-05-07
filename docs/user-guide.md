@@ -1060,7 +1060,7 @@ reviewer catching a real bug in real time is worth more than any amount of expla
 | Track details and safety stoplist | `docs/tracks.md` |
 | Common questions | `docs/faq.md` |
 | Migrating from v1, v2.x, or to v2.6 | `docs/migration/v1-to-v2.md` |
-| Pipeline stage definitions (authoritative) | `.claude/rules/pipeline.md` |
+| Pipeline stage definitions (authoritative) | `.claude/rules/pipeline-core.md`, `pipeline-build.md`, `pipeline-tracks.md` (`pipeline.md` is the index) |
 | Gate JSON schema | `.claude/rules/gates.md` and `schemas/` |
 | Coding principles (binding on all devs) | `.claude/rules/coding-principles.md` |
 | Runbook template | `docs/runbook-template.md` |

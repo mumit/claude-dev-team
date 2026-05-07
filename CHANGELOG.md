@@ -10,6 +10,81 @@ is the index and the rolling `[Unreleased]` pointer — it stays thin so
 GitHub Release bodies, and breaking-change detail live in the release
 files.
 
+## [Unreleased]
+
+Audit-driven hardening run from 2026-05-07 (refresh of the 2026-04-16
+audit; see `docs/audit/`). Twenty-eight commits closing all twenty-seven
+roadmap items across Batches 1–4. No backwards-incompatible changes for
+projects already on v2.6.0; bootstrap re-run picks up everything safely.
+
+### Added
+- `scripts/budget.js` (B-11) and `scripts/visualize.js` (B-12) ported
+  from codex-dev-team. New CLI subcommands `budget`, `visualize`, and
+  `checkpoint` (B-24, async-checkpoint conditional auto-pass).
+- `scripts/stoplist.js` (B-13) — pre-flight regex check that refuses
+  `/quick`, `/nano`, `/config-only`, `/dep-update` on stoplist matches
+  (auth, crypto, PII, payments, migrations, feature flags). `--force`
+  bypasses for false positives.
+- Opt-in `LOG_FORMAT=json` structured event mode for both hooks (B-23).
+  Schema in `.claude/hooks/README.md` (also new — B-6).
+- `templates/README.md` cataloguing the eleven artefact templates (B-5).
+- `docs/adr/0001-pipeline-agent-bilateral-coupling.md` (B-27) — first
+  framework-level ADR.
+- 145 new test assertions (265 → 410): hook byte-parity (B-1), gate-validator
+  filesystem error branching (B-3), config.yml version drift (B-19),
+  schema descriptions (B-4), stoplist patterns (B-13), budget tracker
+  (B-11), concurrency (B-14), security-heuristic table (B-15), slash↔CLI
+  parity (B-9), adapter contract (B-18), visualize (B-12), settings hook
+  commands (B-20), file-size caps (B-16), checkpoint auto-pass (B-24),
+  cross-validator behavioural parity vs codex (B-25), structured-log mode
+  (B-23).
+
+### Changed
+- `.claude/rules/pipeline.md` (548 lines) split into three sub-files
+  (B-21): `pipeline-tracks.md` (Stage 0), `pipeline-core.md` (Stages 1, 2,
+  3, 9 + duration), `pipeline-build.md` (Stages 4–8). `pipeline.md` is
+  now a thin index. Existing references in agent prompts and command
+  files remain conceptually accurate.
+- `scripts/claude-team.js` dispatch refactored from a 32-branch if-chain
+  to a `COMMANDS` object map (B-17). Behaviour unchanged.
+- `tests/_framework-contract.js` extracted as the single source of truth
+  for COMMANDS, RULES, SKILLS, ADAPTERS, STAGE_NUMBERS, STAGE_SCHEMAS,
+  HELPER_SCRIPTS used by three test files (B-10).
+- `Bash(curl *)` permission narrowed to localhost http(s) with optional
+  flag prefix (B-2).
+- `gate-validator.js` distinguishes filesystem error classes — `EACCES`,
+  `EPERM`, `ENOTDIR`, `EISDIR`, `EROFS` exit 1 instead of silent PASS
+  (B-3, S-03).
+- `release.js check` now also verifies `.claude/config.yml`
+  framework.version against the repo `VERSION` file (B-19).
+- `approval-derivation.js` lock retry replaced busy-spin with
+  `Atomics.wait` (B-22) — no CPU during contention.
+- Hook command shim in `.claude/settings.json` upgraded from
+  `git rev-parse --show-toplevel` to a three-tier fallback chain
+  `${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}`
+  (B-20). Hooks now run cleanly in non-git checkouts.
+- `docs/build-presentation.js` moved to `scripts/build-presentation.js`
+  (B-26). `docs/` now holds prose only.
+- README gains a "First 30 Minutes" onboarding section linking
+  `EXAMPLE.md`, the adapter one-liner, and the Stage 5 reviewer marker
+  grammar (B-7).
+
+### Fixed
+- Both hooks now cap untrusted file reads at 1 MB (B-16, S-05) — gate
+  files, review markdown, and the embedded gate read in
+  approval-derivation. Oversize input no longer OOMs the hook.
+- Lock-tuning constants in `approval-derivation.js` carry rationale
+  comments (B-8) — 600 ms total wait window explained.
+- Schema property descriptions added across all eleven gate schemas
+  (B-4, D-01).
+
+### Documentation
+- `.claude/hooks/README.md` (new — B-6) documents hook events, exit
+  codes, structured-log schema, and the project-root resolution chain.
+- `templates/README.md` (new — B-5) catalogues all eleven templates.
+- All eleven `schemas/*.schema.json` carry top-level + per-property
+  `description` fields (B-4).
+
 ## v2.x release map
 
 | Release | Date | Release notes | Scope |
