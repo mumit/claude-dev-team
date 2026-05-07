@@ -31,7 +31,7 @@ zero runtime risk.
 
 | Order | Item | Why |
 |---|---|---|
-| 6 | **B-4** Add `description` fields to `schemas/*.schema.json` | One-time, helps every future gate author. |
+| 6 | **B-4 [DONE]** Add `description` fields to `schemas/*.schema.json` | One-time, helps every future gate author. |
 | 7 | **B-5** `templates/README.md` | Eleven one-liners. |
 | 8 | **B-6** `.claude/hooks/README.md` | Documents hook event contract. |
 | 9 | **B-7** README "First 30 minutes" + EXAMPLE.md link + adapter one-liner | Closes the three onboarding frictions in one PR. |

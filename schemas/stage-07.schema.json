@@ -1,7 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.local/claude-dev-team/stage-07.schema.json",
-  "title": "Stage 07 Sign-off and Deploy Gate",
+  "title": "Stage 07 Sign-off Gate",
+  "description": "Stage 7 (PM Sign-off) gate. Authored by the pm agent OR by the orchestrator on the auto-fold path when Stage 6 passes cleanly with a 1:1 criterion mapping. The auto_from_stage_06 flag (additional property) discriminates the two paths.",
   "type": "object",
   "required": [
     "pm_signoff",
@@ -9,11 +10,26 @@
     "runbook_referenced"
   ],
   "properties": {
-    "pm_signoff": { "type": "boolean" },
-    "deploy_requested": { "type": "boolean" },
-    "runbook_referenced": { "type": "boolean" },
-    "adapter": { "type": "string" },
-    "smoke_test_passed": { "type": "boolean" }
+    "pm_signoff": {
+      "type": "boolean",
+      "description": "PM (or auto-fold) confirms acceptance criteria are met. Stage 8 cannot start without this."
+    },
+    "deploy_requested": {
+      "type": "boolean",
+      "description": "True when the user wants to proceed to deploy after sign-off; false marks the run complete here."
+    },
+    "runbook_referenced": {
+      "type": "boolean",
+      "description": "Confirms pipeline/runbook.md exists with §Rollback and §Health signals before deploy."
+    },
+    "adapter": {
+      "type": "string",
+      "description": "Selected deploy adapter name from .claude/config.yml (carried forward to Stage 8)."
+    },
+    "smoke_test_passed": {
+      "type": "boolean",
+      "description": "Optional pre-deploy smoke result; informational at Stage 7 (the authoritative one is in Stage 8)."
+    }
   },
   "additionalProperties": true
 }

@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.local/claude-dev-team/gate.schema.json",
   "title": "Claude Dev Team Gate",
+  "description": "Base contract for every pipeline gate JSON written under pipeline/gates/. Per-stage schemas extend this with stage-specific required fields. Field semantics are defined in .claude/rules/gates.md; the gate-validator hook is the authoritative reader.",
   "type": "object",
   "required": [
     "stage",
@@ -13,19 +14,51 @@
     "warnings"
   ],
   "properties": {
-    "stage": { "type": "string", "pattern": "^stage-[0-9]{2}([-.][a-z0-9-]+)?$" },
-    "status": { "type": "string", "enum": ["PASS", "FAIL", "ESCALATE"] },
-    "agent": { "type": "string", "minLength": 1 },
+    "stage": {
+      "type": "string",
+      "pattern": "^stage-[0-9]{2}([-.][a-z0-9-]+)?$",
+      "description": "Stage identifier matching the gate's filename, e.g. 'stage-04' or 'stage-05-backend'."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PASS", "FAIL", "ESCALATE"],
+      "description": "Outcome of the stage. ESCALATE halts the pipeline regardless of any newer gate; see .claude/rules/escalation.md."
+    },
+    "agent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of the agent (or 'orchestrator') that wrote this gate. Used for ownership and retry routing."
+    },
     "track": {
       "type": "string",
-      "enum": ["full", "quick", "nano", "config-only", "dep-update", "hotfix"]
+      "enum": ["full", "quick", "nano", "config-only", "dep-update", "hotfix"],
+      "description": "Pipeline track the gate belongs to. Tracks differ on which stages run and how many approvals each gate requires."
     },
-    "timestamp": { "type": "string", "minLength": 1 },
-    "blockers": { "type": "array" },
-    "warnings": { "type": "array" },
-    "retry_number": { "type": "number" },
-    "previous_failure_reason": { "type": "string" },
-    "this_attempt_differs_by": { "type": "string" }
+    "timestamp": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ISO 8601 timestamp when the gate was written. Used for the bypassed-escalation sweep."
+    },
+    "blockers": {
+      "type": "array",
+      "description": "Reasons the stage cannot proceed. A non-empty array typically pairs with status FAIL or ESCALATE."
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Non-blocking concerns surfaced for visibility. Do not change the gate status."
+    },
+    "retry_number": {
+      "type": "number",
+      "description": "Zero-based retry counter. When >= 1, this_attempt_differs_by must be a non-empty string (enforced by gate-validator)."
+    },
+    "previous_failure_reason": {
+      "type": "string",
+      "description": "Short summary of why the previous attempt failed; informational only."
+    },
+    "this_attempt_differs_by": {
+      "type": "string",
+      "description": "What changed since the previous failure. Required when retry_number >= 1; same content twice escalates instead of retrying."
+    }
   },
   "additionalProperties": true
 }
