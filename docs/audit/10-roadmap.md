@@ -77,9 +77,11 @@ could be better.
 - **B-23 [DONE]** Structured log mode for hooks (`LOG_FORMAT=json`).
   Both hooks emit one JSON event line per terminal exit; schema
   documented in `.claude/hooks/README.md`.
-- **B-24** Async-checkpoint conditional auto-pass. The config plumbing
-  exists; the hook code does not. Codex sibling has the impl; port
-  pattern.
+- **B-24 [DONE]** Async-checkpoint conditional auto-pass. Ported codex's
+  `applyCheckpointAutoPass` into `claude-team.js`; exposed as
+  `claude-team checkpoint <stage>`. Honours both `no_warnings` and
+  (Checkpoint C only) `all_criteria_passed`. Suppresses when
+  `pipeline/context.md` mentions any stoplist topic.
 - **B-25 [DONE]** Behavioural parity check vs codex-dev-team
   (`tests/codex-parity.test.js`). Skips if codex isn't a sibling
   directory; otherwise runs both validators against identical gate

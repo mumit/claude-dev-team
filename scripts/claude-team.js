@@ -647,6 +647,119 @@ function signoffAutoFoldEligibility(track) {
   return { ok: false, reason: "stage-06 must meet acceptance criteria with 1:1 mapping" };
 }
 
+// ---------------------------------------------------------------------------
+// Checkpoint auto-pass (audit B-24).
+//
+// .claude/config.yml ships three checkpoints with `auto_pass_when: null` by
+// default. When a project sets one of the supported conditions, the
+// orchestrator can call `claude-team checkpoint <stage>` after writing the
+// preceding gate to evaluate whether the human "proceed" can be skipped.
+// Auto-passing is opt-in per checkpoint and never overrides the safety
+// stoplist — runs that mention auth/PII/migrations etc. in
+// pipeline/context.md are suppressed regardless of config.
+// ---------------------------------------------------------------------------
+
+// Map from stage name to checkpoint label. Claude's checkpoints are:
+//   A — after Stage 1 Requirements (brief ready)
+//   B — after Stage 2 Design (design approved)
+//   C — after Stage 6 QA (tests pass)
+const CHECKPOINT_STAGE_MAP = {
+  requirements: "a",
+  design: "b",
+  qa: "c",
+};
+
+function readCheckpointConfig() {
+  const configPath = path.join(ROOT, ".claude", "config.yml");
+  if (!fs.existsSync(configPath)) return { a: null, b: null, c: null };
+  const text = fs.readFileSync(configPath, "utf8");
+  const result = {};
+  for (const label of ["a", "b", "c"]) {
+    const re = new RegExp(`${label}:\\s*\\n\\s+auto_pass_when:\\s*(\\S+)`);
+    const m = re.exec(text);
+    result[label] = m ? (m[1].trim() === "null" ? null : m[1].trim()) : null;
+  }
+  return result;
+}
+
+// Stoplist keywords also live in scripts/stoplist.js — but that module
+// scans description text and changed-files. Here we scan
+// pipeline/context.md for the human-readable phrasing the rules use, so a
+// safety-relevant run never auto-passes regardless of regex coverage.
+const CONTEXT_STOPLIST_KEYWORDS = [
+  "auth", "authorization", "session handling",
+  "cryptography", "key management", "secrets rotation",
+  "pii", "payments", "regulated-data", "regulated data",
+  "schema migration", "destructive data",
+  "feature-flag introduction", "feature flag introduction",
+  "new external dependenc",
+];
+
+function contextHasStoplistTrigger() {
+  const contextPath = path.join(ROOT, "pipeline", "context.md");
+  if (!fs.existsSync(contextPath)) return false;
+  const text = fs.readFileSync(contextPath, "utf8").toLowerCase();
+  return CONTEXT_STOPLIST_KEYWORDS.some((k) => text.includes(k));
+}
+
+/**
+ * After a stage gate passes, check whether the corresponding checkpoint
+ * can be auto-passed. Returns one of:
+ *   - "not-a-checkpoint"  — the named stage doesn't gate a checkpoint
+ *   - "waiting"           — config says wait, OR conditions not yet met
+ *   - "suppressed"        — stoplist trigger present in context.md
+ *   - "auto-passed"       — record appended; orchestrator may proceed
+ */
+function applyCheckpointAutoPass(stageName) {
+  const label = CHECKPOINT_STAGE_MAP[stageName];
+  if (!label) return "not-a-checkpoint";
+
+  const config = readCheckpointConfig();
+  const condition = config[label];
+  if (!condition) return "waiting";
+
+  if (contextHasStoplistTrigger()) return "suppressed";
+
+  const stageGateName = STAGES[stageName] ? STAGES[stageName].stage : stageName;
+  const gateRead = readGate(stageGateName);
+  if (!gateRead.exists) return "waiting";
+  const gate = gateRead.gate;
+
+  if (condition === "no_warnings") {
+    const warnings = Array.isArray(gate.warnings) ? gate.warnings : null;
+    if (warnings && warnings.length === 0) {
+      ensurePipelineWorkspace();
+      appendContext(`${new Date().toISOString()} — CHECKPOINT-AUTO-PASS: ${label} (no_warnings)`);
+      return "auto-passed";
+    }
+    return "waiting";
+  }
+
+  if (condition === "all_criteria_passed" && label === "c") {
+    if (gate.all_acceptance_criteria_met === true &&
+        gate.criterion_to_test_mapping_is_one_to_one === true) {
+      ensurePipelineWorkspace();
+      appendContext(`${new Date().toISOString()} — CHECKPOINT-AUTO-PASS: c (all_criteria_passed)`);
+      return "auto-passed";
+    }
+    return "waiting";
+  }
+
+  return "waiting";
+}
+
+function runCheckpoint(argv) {
+  const stageName = argv[0];
+  if (!stageName) {
+    console.error("Usage: claude-team checkpoint <stage-name>");
+    console.error("  stage-name: one of requirements, design, qa");
+    return 1;
+  }
+  const result = applyCheckpointAutoPass(stageName);
+  console.log(result);
+  return 0;
+}
+
 function nextPayload() {
   const track = activeTrack();
   for (const name of orderedStageNamesForTrack(track)) {
@@ -1248,7 +1361,7 @@ function usage(exitCode = 1) {
     "",
     "Core:",
     "  status | next | roadmap | validate | doctor | reset",
-    "  review | security | runbook | budget | visualize | lessons | summary | autofold",
+    "  review | security | runbook | budget | visualize | checkpoint | lessons | summary | autofold",
     "  audit | audit-quick | health-check",
     "",
     "Pipeline:",
@@ -1306,6 +1419,7 @@ const COMMANDS = {
   runbook: () => runNodeScript("runbook-check.js"),
   budget: (argv) => runNodeScript("budget.js", argv),
   visualize: (argv) => runNodeScript("visualize.js", argv),
+  checkpoint: (argv) => runCheckpoint(argv),
   lessons: (argv) => runNodeScript("lessons.js", argv),
 
   // Audit family
@@ -1357,6 +1471,8 @@ module.exports = {
   STAGES,
   TRACKS,
   COMMANDS,
+  applyCheckpointAutoPass,
+  CHECKPOINT_STAGE_MAP,
   canonicalStageName,
   draftGateObject,
   orderedStageNamesForTrack,

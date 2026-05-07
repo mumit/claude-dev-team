@@ -96,7 +96,7 @@ None. The audit found no critical issues.
 | **B-21** | Split `.claude/rules/pipeline.md` into pipeline-core/pipeline-build/pipeline-tracks files | Theme 1 | M | Low — current monolith works; split would speed agent context loads | MEDIUM |
 | **B-22 [DONE]** | Replace busy-spin lock retry loop with async `setTimeout`-based wait | Theme 3 | S | Low — micro-optimisation, but cleaner | LOW |
 | **B-23 [DONE]** | Add structured-log mode (`LOG_FORMAT=json`) to both hooks for external observability | Theme 5 | M | Low — useful for orchestrators integrating with CI | MEDIUM |
-| **B-24** | Consider porting Codex's async-checkpoint conditional auto-pass to claude-dev-team | Theme 2 | M | Low — claude has the config plumbing already; impl missing | MEDIUM |
+| **B-24 [DONE]** | Consider porting Codex's async-checkpoint conditional auto-pass to claude-dev-team | Theme 2 | M | Low — claude has the config plumbing already; impl missing | MEDIUM |
 | **B-25 [DONE]** | Expand parity-check.js to include behavioural assertions (not just file presence) | Theme 1 | M | Medium — current parity check is shallow | MEDIUM |
 | **B-26 [DONE]** | Move `docs/build-presentation.js` to `scripts/`, give it real unit tests | Theme 5 | M | Low — keeps docs/ a doc dir | LOW |
 | **B-27 [DONE]** | Add an ADR documenting the bilateral coupling between `pipeline.md` and agent prompts (Q-08) | Theme 1 | XS | Low — defensive doc | LOW |

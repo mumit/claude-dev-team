@@ -34,6 +34,7 @@ const CLI_ONLY = new Set([
   "runbook",        // runs runbook-check.js
   "budget",         // runs budget.js (init/update/check)
   "visualize",      // runs visualize.js — writes pipeline/diagram.md (Mermaid)
+  "checkpoint",     // applies checkpoint auto-pass per .claude/config.yml
 
   // Internal scaffolding consumed by /pipeline et al.; not user-facing.
   "pipeline:new",
