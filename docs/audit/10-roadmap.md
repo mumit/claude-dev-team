@@ -80,10 +80,12 @@ could be better.
 - **B-24** Async-checkpoint conditional auto-pass. The config plumbing
   exists; the hook code does not. Codex sibling has the impl; port
   pattern.
-- **B-25** Behavioural parity check vs codex-dev-team. Today's parity
-  is file-presence + config-key. Promote to "given the same gate
-  inputs, both repos' validators emit the same outputs" — would catch
-  semantic drift.
+- **B-25 [DONE]** Behavioural parity check vs codex-dev-team
+  (`tests/codex-parity.test.js`). Skips if codex isn't a sibling
+  directory; otherwise runs both validators against identical gate
+  fixtures and asserts matching exit codes. Surfaced one real semantic
+  divergence (codex enforces per-stage schema fields, claude only
+  enforces base gate fields) — documented in the test, not "fixed."
 - **B-26 [DONE]** Moved `docs/build-presentation.js` to `scripts/build-presentation.js`.
   Pure cleanliness — `docs/` now only holds prose; build-time scripts all
   live under `scripts/`.
