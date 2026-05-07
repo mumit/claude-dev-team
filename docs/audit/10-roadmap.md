@@ -68,10 +68,13 @@ dispatch refactor. Verification: extended `npm test`. Total effort:
 **Goal:** evolve the framework where the current shape is fine but
 could be better.
 
-- **B-21** Split `pipeline.md` into three files. Run only after B-9 and
-  B-11 land so the new files reflect the latest stage list. Mini-
-  proposal: each agent's frontmatter declares which subset it loads;
-  `tests/contract.test.js` checks the union covers all stages.
+- **B-21 [DONE]** Split `pipeline.md` into three files (`pipeline-core.md`,
+  `pipeline-build.md`, `pipeline-tracks.md`). `pipeline.md` is now a
+  thin index. Stoplist content moved to `pipeline-tracks.md`;
+  `parity-check.js` updated. The split's mini-proposal of "each agent's
+  frontmatter declares which subset it loads" was deferred — agents
+  still load the index and follow pointers, which is good enough at
+  current scale.
 - **B-22 [DONE]** Replace busy-spin lock retry with `Atomics.wait` —
   synchronous, no CPU burn, callers unchanged.
 - **B-23 [DONE]** Structured log mode for hooks (`LOG_FORMAT=json`).

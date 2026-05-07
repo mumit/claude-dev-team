@@ -32,9 +32,11 @@ describe("release helper", () => {
     fs.mkdirSync(path.join(target, "schemas"), { recursive: true });
     fs.mkdirSync(path.join(target, "scripts"), { recursive: true });
 
-    // Pipeline rules with stoplist content
-    const pipelineContent = [
-      "# pipeline",
+    // Stoplist content lives in pipeline-tracks.md after the B-21 split;
+    // pipeline.md is now a thin index. parity-check scans pipeline-tracks
+    // for the required strings, so the fixture writes them there.
+    const tracksContent = [
+      "# pipeline-tracks",
       "**Safety stoplist**",
       "- Authentication, authorization, or session handling",
       "- Cryptography, key management, or secrets rotation",
@@ -42,12 +44,10 @@ describe("release helper", () => {
       "## Tracks",
       "| full |",
     ].join("\n") + "\n";
-    // pipeline.md is written below with stoplist content; the other rules
-    // are stubbed.
-    for (const rule of RULES.filter((r) => r !== "pipeline")) {
+    for (const rule of RULES.filter((r) => r !== "pipeline-tracks")) {
       fs.writeFileSync(path.join(target, ".claude", "rules", `${rule}.md`), `# ${rule}\n`);
     }
-    fs.writeFileSync(path.join(target, ".claude", "rules", "pipeline.md"), pipelineContent);
+    fs.writeFileSync(path.join(target, ".claude", "rules", "pipeline-tracks.md"), tracksContent);
 
     // Slash commands
     for (const cmd of COMMANDS) {

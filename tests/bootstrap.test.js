@@ -96,10 +96,16 @@ describe('bootstrap.sh', () => {
 
   it('Stage 5 defines a READ-ONLY reviewer rule and each dev agent cites it', () => {
     run(target);
-    const pipelinePath = path.join(target, '.claude', 'rules', 'pipeline.md');
-    const pipeline = fs.readFileSync(pipelinePath, 'utf8');
-    assert.ok(pipeline.includes('READ-ONLY Reviewer Rule'), 'pipeline.md must define the READ-ONLY Reviewer Rule');
-    assert.ok(pipeline.includes('No fix-forward'), 'pipeline.md must forbid fix-forward patches');
+    // After the B-21 split, the Stage 5 content lives in pipeline-build.md;
+    // pipeline.md is a thin index. Concatenate all pipeline-* rule files
+    // before searching so the test is robust to future content moves.
+    const rulesDir = path.join(target, '.claude', 'rules');
+    const pipelineCorpus = ['pipeline.md', 'pipeline-core.md', 'pipeline-build.md', 'pipeline-tracks.md']
+      .filter((f) => fs.existsSync(path.join(rulesDir, f)))
+      .map((f) => fs.readFileSync(path.join(rulesDir, f), 'utf8'))
+      .join('\n');
+    assert.ok(pipelineCorpus.includes('READ-ONLY Reviewer Rule'), 'pipeline rule files must define the READ-ONLY Reviewer Rule');
+    assert.ok(pipelineCorpus.includes('No fix-forward'), 'pipeline rule files must forbid fix-forward patches');
 
     const gatesPath = path.join(target, '.claude', 'rules', 'gates.md');
     const gates = fs.readFileSync(gatesPath, 'utf8');

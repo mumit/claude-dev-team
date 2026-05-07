@@ -41,6 +41,9 @@ const RULES = [
   "gates",
   "orchestrator",
   "pipeline",
+  "pipeline-core",
+  "pipeline-build",
+  "pipeline-tracks",
   "retrospective",
 ];
 

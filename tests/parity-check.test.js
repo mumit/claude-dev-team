@@ -48,9 +48,11 @@ function scaffoldRepo(tmpDir) {
     fs.writeFileSync(path.join(rulesDir, `${rule}.md`), `# ${rule}\n`);
   }
 
-  // pipeline.md with stoplist content
-  fs.writeFileSync(path.join(rulesDir, "pipeline.md"), [
-    "# Pipeline",
+  // After the B-21 split the stoplist content lives in pipeline-tracks.md;
+  // parity-check scans there. The other pipeline-* rule files are
+  // satisfied by the stubs the loop above wrote.
+  fs.writeFileSync(path.join(rulesDir, "pipeline-tracks.md"), [
+    "# pipeline-tracks",
     "**Safety stoplist**",
     "- Authentication, authorization, or session handling",
     "- Cryptography, key management, or secrets rotation",
@@ -140,13 +142,15 @@ describe("parity-check — stoplist validation", () => {
   });
 
   it("fails when a required stoplist string is missing", () => {
-    const pipelinePath = path.join(tmp, ".claude", "rules", "pipeline.md");
-    fs.writeFileSync(pipelinePath, "# Pipeline\n\n## Tracks\n| full |\n");
+    // After B-21, stoplist content lives in pipeline-tracks.md. Mutate
+    // that file to remove the stoplist content and confirm the check bites.
+    const tracksPath = path.join(tmp, ".claude", "rules", "pipeline-tracks.md");
+    fs.writeFileSync(tracksPath, "# pipeline-tracks\n\n## Tracks\n| full |\n");
     const errors = checkStoplistContent(tmp);
     assert.ok(errors.length > 0, "should have errors when stoplist content is missing");
     assert.ok(errors.some((e) => e.includes("Safety stoplist")));
     // Restore
-    fs.writeFileSync(pipelinePath, [
+    fs.writeFileSync(tracksPath, [
       "# Pipeline",
       "**Safety stoplist**",
       "- Authentication",
@@ -157,13 +161,13 @@ describe("parity-check — stoplist validation", () => {
   });
 
   it("main() returns non-zero when stoplist string is missing", () => {
-    const pipelinePath = path.join(tmp, ".claude", "rules", "pipeline.md");
-    const original = fs.readFileSync(pipelinePath, "utf8");
-    fs.writeFileSync(pipelinePath, original.replace(/Authentication/g, "REMOVED"));
+    const tracksPath = path.join(tmp, ".claude", "rules", "pipeline-tracks.md");
+    const original = fs.readFileSync(tracksPath, "utf8");
+    fs.writeFileSync(tracksPath, original.replace(/Authentication/g, "REMOVED"));
     const result = main(tmp);
     assert.notEqual(result, 0, "main() should fail when stoplist content is missing");
     // Restore
-    fs.writeFileSync(pipelinePath, original);
+    fs.writeFileSync(tracksPath, original);
   });
 });
 

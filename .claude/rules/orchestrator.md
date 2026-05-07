@@ -27,7 +27,12 @@ judgement calls under one agent. v2.3 separates them:
 
 ## Pipeline
 
-Full pipeline definition: see `.claude/rules/pipeline.md`
+Full pipeline definition (split into three files since 2026-05-07):
+- `.claude/rules/pipeline-tracks.md` — Stage 0: track routing + stoplist + budget + async checkpoints
+- `.claude/rules/pipeline-core.md` — Stages 1, 2, 3, 9 + duration expectations
+- `.claude/rules/pipeline-build.md` — Stages 4–8
+
+Index and rationale: `.claude/rules/pipeline.md`.
 Gate schema: see `.claude/rules/gates.md`
 Escalation rules: see `.claude/rules/escalation.md`
 Coding principles (binding on all devs): see `.claude/rules/coding-principles.md`
@@ -37,7 +42,8 @@ Compaction instructions: see `.claude/rules/compaction.md`
 ## Startup
 
 Before any pipeline run:
-1. Read `.claude/rules/pipeline.md` and `.claude/rules/coding-principles.md`
+1. Read all three pipeline rule files (`pipeline-tracks.md`, `pipeline-core.md`,
+   `pipeline-build.md`) and `.claude/rules/coding-principles.md`
 2. If `pipeline/lessons-learned.md` exists, read it — it is durable guidance
    from past runs. Include its full content in every agent invocation prompt
    under a `## Lessons from past runs` heading rather than telling agents to

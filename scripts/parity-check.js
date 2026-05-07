@@ -52,6 +52,9 @@ const REQUIRED_RULES = [
   "gates",
   "orchestrator",
   "pipeline",
+  "pipeline-core",
+  "pipeline-build",
+  "pipeline-tracks",
   "retrospective",
 ];
 
@@ -179,15 +182,21 @@ function checkConfigKeys(root) {
   return errors;
 }
 
-/** Check: .claude/rules/pipeline.md contains required stoplist strings. */
+/**
+ * Check: the pipeline-tracks rule file contains required stoplist strings.
+ * (Pre-B-21 the stoplist lived in pipeline.md; the audit-driven split
+ * moved it into pipeline-tracks.md, which is now the authoritative source.
+ * pipeline.md is a thin index after the split — it does not contain the
+ * stoplist text and shouldn't be required to.)
+ */
 function checkStoplistContent(root) {
-  const pipelinePath = path.join(root, ".claude", "rules", "pipeline.md");
-  if (!fs.existsSync(pipelinePath)) return ["missing .claude/rules/pipeline.md"];
-  const content = fs.readFileSync(pipelinePath, "utf8");
+  const tracksPath = path.join(root, ".claude", "rules", "pipeline-tracks.md");
+  if (!fs.existsSync(tracksPath)) return ["missing .claude/rules/pipeline-tracks.md"];
+  const content = fs.readFileSync(tracksPath, "utf8");
   const errors = [];
   for (const str of REQUIRED_STOPLIST_STRINGS) {
     if (!content.includes(str)) {
-      errors.push(`pipeline.md missing required stoplist string: "${str}"`);
+      errors.push(`pipeline-tracks.md missing required stoplist string: "${str}"`);
     }
   }
   return errors;
