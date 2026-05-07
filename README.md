@@ -48,6 +48,66 @@ claude
 
 ---
 
+## First 30 Minutes
+
+After bootstrap, do these three things before kicking off your first
+`/pipeline` run. Each is a one-paragraph step; the whole sequence takes
+under thirty minutes including reading time.
+
+### 1. Read [`EXAMPLE.md`](EXAMPLE.md)
+
+A walkthrough of one real pipeline run end-to-end — what you'll see at
+each of the nine stages, what the gate files look like, what the three
+human checkpoints feel like, and how an escalation surfaces. This is
+the single best way to understand what's about to happen on your
+project before it happens.
+
+### 2. Pick a deploy adapter
+
+Stage 8 (Deploy) reads `.claude/config.yml` for the adapter name. The
+default is `docker-compose`; change it now if you'll deploy via
+Kubernetes, Terraform, or a custom script:
+
+```yaml
+# .claude/config.yml
+deploy:
+  adapter: kubernetes   # or: docker-compose, terraform, custom
+```
+
+If you forget, Stage 8 will ESCALATE with a clear message — no silent
+failure — but fixing it before the first run keeps the pipeline moving.
+Per-adapter configuration (compose file path, k8s strategy, terraform
+workspace, custom script) lives in the same file under
+`deploy.<adapter>:`. See [`.claude/adapters/`](.claude/adapters/) for
+each adapter's contract.
+
+### 3. If you'll be reviewing code, learn the marker grammar
+
+Stage 5 reviewers write a single Markdown file at
+`pipeline/code-review/by-<reviewer>.md` with one section per area, each
+ending in one of two literal markers:
+
+```markdown
+## Review of backend
+<comments, BLOCKER / SUGGESTION / QUESTION entries>
+
+REVIEW: APPROVED
+
+## Review of platform
+<comments>
+
+REVIEW: CHANGES REQUESTED
+BLOCKER: missing input validation in handler
+```
+
+The `approval-derivation` hook reads only the `REVIEW:` marker;
+everything above it is human-readable context for the author. Optional
+`PATTERN:` lines flag practices worth promoting in the retrospective.
+Full grammar in [`templates/review-template.md`](templates/review-template.md)
+and [`.claude/rules/pipeline.md`](.claude/rules/pipeline.md) §Stage 5.
+
+---
+
 ## When to Use What
 
 | I want to... | Command / Skill |

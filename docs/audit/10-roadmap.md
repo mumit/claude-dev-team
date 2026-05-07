@@ -34,7 +34,7 @@ zero runtime risk.
 | 6 | **B-4 [DONE]** Add `description` fields to `schemas/*.schema.json` | One-time, helps every future gate author. |
 | 7 | **B-5 [DONE]** `templates/README.md` | Eleven one-liners. |
 | 8 | **B-6 [DONE]** `.claude/hooks/README.md` | Documents hook event contract. |
-| 9 | **B-7** README "First 30 minutes" + EXAMPLE.md link + adapter one-liner | Closes the three onboarding frictions in one PR. |
+| 9 | **B-7 [DONE]** README "First 30 minutes" + EXAMPLE.md link + adapter one-liner | Closes the three onboarding frictions in one PR. |
 | 10 | **B-8** Lock-tuning rationale comments | Comment-only edit. |
 
 Parallelisable: yes — independent files. Verification: `npm run
