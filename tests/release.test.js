@@ -4,6 +4,13 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const {
+  COMMANDS,
+  RULES,
+  SKILLS,
+  STAGE_SCHEMAS,
+  HELPER_SCRIPTS,
+} = require("./_framework-contract");
 
 const ROOT = path.resolve(__dirname, "..");
 const SCRIPT = path.join(ROOT, "scripts", "release.js");
@@ -35,30 +42,20 @@ describe("release helper", () => {
       "## Tracks",
       "| full |",
     ].join("\n") + "\n";
-    for (const rule of [
-      "coding-principles", "compaction", "escalation",
-      "gates", "orchestrator", "retrospective",
-    ]) {
+    // pipeline.md is written below with stoplist content; the other rules
+    // are stubbed.
+    for (const rule of RULES.filter((r) => r !== "pipeline")) {
       fs.writeFileSync(path.join(target, ".claude", "rules", `${rule}.md`), `# ${rule}\n`);
     }
     fs.writeFileSync(path.join(target, ".claude", "rules", "pipeline.md"), pipelineContent);
 
     // Slash commands
-    for (const cmd of [
-      "adr", "ask-pm", "audit-quick", "audit", "config-only",
-      "dep-update", "design", "health-check", "hotfix", "nano",
-      "pipeline-brief", "pipeline-context", "pipeline-review", "pipeline",
-      "principal-ruling", "quick", "reset", "resume", "retrospective",
-      "review", "roadmap", "stage", "status",
-    ]) {
+    for (const cmd of COMMANDS) {
       fs.writeFileSync(path.join(target, ".claude", "commands", `${cmd}.md`), `# ${cmd}\n`);
     }
 
     // Skills
-    for (const skill of [
-      "api-conventions", "code-conventions", "implement",
-      "pre-pr-review", "review-rubric", "security-checklist",
-    ]) {
+    for (const skill of SKILLS) {
       fs.mkdirSync(path.join(target, ".claude", "skills", skill), { recursive: true });
       fs.writeFileSync(
         path.join(target, ".claude", "skills", skill, "SKILL.md"),
@@ -75,13 +72,8 @@ describe("release helper", () => {
       .concat(Array(105).fill("Phase content line.\n")).join("");
     fs.writeFileSync(path.join(target, ".claude", "references", "audit-phases.md"), auditPhasesContent);
 
-    // Schemas
-    for (const schema of [
-      "gate.schema.json",
-      "stage-01.schema.json", "stage-02.schema.json", "stage-03.schema.json",
-      "stage-04.schema.json", "stage-05.schema.json", "stage-06.schema.json",
-      "stage-07.schema.json", "stage-08.schema.json", "stage-09.schema.json",
-    ]) {
+    // Schemas: gate.schema.json + every stage schema
+    for (const schema of ["gate.schema.json", ...STAGE_SCHEMAS]) {
       fs.writeFileSync(
         path.join(target, "schemas", schema),
         JSON.stringify({ type: "object", required: [] }),
@@ -114,19 +106,15 @@ describe("release helper", () => {
     fs.writeFileSync(path.join(target, "README.md"), "# Test\n");
     fs.writeFileSync(path.join(target, "CLAUDE.md"), "# Claude\n");
 
-    // Copy the actual parity-check.js so it can run in the target
-    fs.copyFileSync(path.join(ROOT, "scripts", "parity-check.js"), path.join(target, "scripts", "parity-check.js"));
-
-    // Stub required scripts
-    for (const script of [
-      "claude-team.js", "gate-validator.js", "approval-derivation.js",
-      "status.js", "summary.js", "roadmap.js",
-      "release.js", "pr-pack.js", "lessons.js", "runbook-check.js",
-      "security-heuristic.js", "consistency.js", "lint-syntax.js",
-      "audit.js", "bootstrap.js",
-    ]) {
+    // Stub all helper scripts, then overwrite parity-check.js with the real
+    // one so the release check can actually invoke it.
+    for (const script of HELPER_SCRIPTS) {
       fs.writeFileSync(path.join(target, "scripts", script), "// stub\n");
     }
+    fs.copyFileSync(
+      path.join(ROOT, "scripts", "parity-check.js"),
+      path.join(target, "scripts", "parity-check.js"),
+    );
 
     fs.writeFileSync(path.join(target, "package.json"), JSON.stringify({
       version: "1.2.3",

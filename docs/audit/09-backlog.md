@@ -72,7 +72,7 @@ None. The audit found no critical issues.
 | **B-7** | README "First 30 minutes" addition: link EXAMPLE.md, show adapter one-liner | Theme 4 | XS | Low — improves first-run UX | HIGH |
 | **B-8** | Add `LOCK_RETRIES` / `LOCK_DELAY_MS` rationale comments | Theme 3 | XS | Low — improves maintainability | HIGH |
 | **B-9** | Add 1:1 cross-check test between `.claude/commands/` and `claude-team.js` subcommands | Theme 1 | S | Medium — surfaces drift the user wouldn't catch | MEDIUM |
-| **B-10** | Extract framework-contract lists to a shared `tests/_framework-contract.js` | Theme 1 | XS | Low — reduces duplication | HIGH |
+| **B-10 [DONE]** | Extract framework-contract lists to a shared `tests/_framework-contract.js` | Theme 1 | XS | Low — reduces duplication | HIGH |
 
 ### P2 — Targeted improvements (medium effort, focused payoff)
 

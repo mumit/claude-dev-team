@@ -10,6 +10,13 @@ const {
   checkStoplistContent,
   checkAgentPromptLines,
 } = require(path.join(ROOT, "scripts", "parity-check.js"));
+const {
+  COMMANDS,
+  RULES,
+  SKILLS,
+  STAGE_SCHEMAS,
+  HELPER_SCRIPTS,
+} = require("./_framework-contract");
 
 // ---------------------------------------------------------------------------
 // Case 1: main() returns 0 on the actual repo
@@ -30,23 +37,14 @@ function scaffoldRepo(tmpDir) {
   // commands
   const commandsDir = path.join(tmpDir, ".claude", "commands");
   fs.mkdirSync(commandsDir, { recursive: true });
-  for (const cmd of [
-    "adr", "ask-pm", "audit-quick", "audit", "config-only",
-    "dep-update", "design", "health-check", "hotfix", "nano",
-    "pipeline-brief", "pipeline-context", "pipeline-review", "pipeline",
-    "principal-ruling", "quick", "reset", "resume", "retrospective",
-    "review", "roadmap", "stage", "status",
-  ]) {
+  for (const cmd of COMMANDS) {
     fs.writeFileSync(path.join(commandsDir, `${cmd}.md`), `# ${cmd}\n`);
   }
 
   // rules
   const rulesDir = path.join(tmpDir, ".claude", "rules");
   fs.mkdirSync(rulesDir, { recursive: true });
-  for (const rule of [
-    "coding-principles", "compaction", "escalation",
-    "gates", "orchestrator", "pipeline", "retrospective",
-  ]) {
+  for (const rule of RULES) {
     fs.writeFileSync(path.join(rulesDir, `${rule}.md`), `# ${rule}\n`);
   }
 
@@ -68,10 +66,7 @@ function scaffoldRepo(tmpDir) {
   fs.writeFileSync(path.join(agentsDir, "reviewer.md"), longAgent);
 
   // skills
-  for (const skill of [
-    "api-conventions", "code-conventions", "implement",
-    "pre-pr-review", "review-rubric", "security-checklist",
-  ]) {
+  for (const skill of SKILLS) {
     const skillDir = path.join(tmpDir, ".claude", "skills", skill);
     fs.mkdirSync(skillDir, { recursive: true });
     fs.writeFileSync(path.join(skillDir, "SKILL.md"), `---\nname: ${skill}\ndescription: test\n---\n`);
@@ -100,34 +95,17 @@ function scaffoldRepo(tmpDir) {
   const phaseContent = ["# Audit Phase Definitions\n", ...Array(105).fill("Phase content.\n")].join("");
   fs.writeFileSync(path.join(refsDir, "audit-phases.md"), phaseContent);
 
-  // schemas
+  // schemas: gate.schema.json + every stage schema
   const schemasDir = path.join(tmpDir, "schemas");
   fs.mkdirSync(schemasDir, { recursive: true });
-  for (const schema of [
-    "gate.schema.json",
-    "stage-01.schema.json",
-    "stage-02.schema.json",
-    "stage-03.schema.json",
-    "stage-04.schema.json",
-    "stage-05.schema.json",
-    "stage-06.schema.json",
-    "stage-07.schema.json",
-    "stage-08.schema.json",
-    "stage-09.schema.json",
-  ]) {
+  for (const schema of ["gate.schema.json", ...STAGE_SCHEMAS]) {
     fs.writeFileSync(path.join(schemasDir, schema), JSON.stringify({ type: "object", required: [] }));
   }
 
   // scripts
   const scriptsDir = path.join(tmpDir, "scripts");
   fs.mkdirSync(scriptsDir, { recursive: true });
-  for (const script of [
-    "claude-team.js", "gate-validator.js", "approval-derivation.js",
-    "status.js", "summary.js", "roadmap.js", "parity-check.js",
-    "release.js", "pr-pack.js", "lessons.js", "runbook-check.js",
-    "security-heuristic.js", "consistency.js", "lint-syntax.js",
-    "audit.js", "bootstrap.js",
-  ]) {
+  for (const script of HELPER_SCRIPTS) {
     fs.writeFileSync(path.join(scriptsDir, script), "// stub\n");
   }
 

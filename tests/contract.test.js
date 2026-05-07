@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { PACKAGE_SCRIPTS } = require("../scripts/bootstrap");
 const { STAGES, TRACKS, draftGateObject, orderedStageNames } = require("../scripts/claude-team");
+const { RULES, SKILLS, STAGE_NUMBERS } = require("./_framework-contract");
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -38,17 +39,7 @@ describe("framework contracts", () => {
   });
 
   it("stage schemas are present for high-value stages", () => {
-    for (const stage of [
-      "stage-01",
-      "stage-02",
-      "stage-03",
-      "stage-04",
-      "stage-05",
-      "stage-06",
-      "stage-07",
-      "stage-08",
-      "stage-09",
-    ]) {
+    for (const stage of STAGE_NUMBERS) {
       const fullPath = path.join(ROOT, "schemas", `${stage}.schema.json`);
       assert.ok(fs.existsSync(fullPath), `${stage} schema should exist`);
       const schema = JSON.parse(fs.readFileSync(fullPath, "utf8"));
@@ -111,14 +102,7 @@ describe("framework contracts", () => {
   });
 
   it("core skills exist and have content", () => {
-    for (const name of [
-      "implement",
-      "pre-pr-review",
-      "api-conventions",
-      "code-conventions",
-      "review-rubric",
-      "security-checklist",
-    ]) {
+    for (const name of SKILLS) {
       const skillPath = path.join(ROOT, ".claude", "skills", name, "SKILL.md");
       assert.ok(fs.existsSync(skillPath), `${name} SKILL.md should exist`);
       const skill = fs.readFileSync(skillPath, "utf8");
@@ -128,15 +112,7 @@ describe("framework contracts", () => {
   });
 
   it("Claude rule files exist", () => {
-    for (const rule of [
-      "coding-principles",
-      "compaction",
-      "escalation",
-      "gates",
-      "orchestrator",
-      "pipeline",
-      "retrospective",
-    ]) {
+    for (const rule of RULES) {
       const body = read(`.claude/rules/${rule}.md`);
       assert.match(body, /^# /, `${rule} should have a title`);
     }

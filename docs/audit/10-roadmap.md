@@ -19,7 +19,7 @@ tighten the obviously-loose security knob.
 | 2 | **B-3 [DONE]** `gate-validator` error-class branching | Silent PASS on EACCES is the only place a real bug could hide; cheap to fix. |
 | 3 | **B-2 [DONE]** Tighten `Bash(curl *)` allow-list | Single-line edit to `settings.json`. Reduces exfil surface to near-zero. |
 | 4 | **B-19 [DONE]** Release-version consistency test | One assertion guarding all future releases. Trivial. |
-| 5 | **B-10** Extract `tests/_framework-contract.js` | Removes a duplication that's already biting in two test files. |
+| 5 | **B-10 [DONE]** Extract `tests/_framework-contract.js` | Removes a duplication that was actually biting in three test files. |
 
 Parallelisable: yes — five independent commits, no shared file edits.
 Verification: `npm test` after each. Total effort: ~2–3 hours.
