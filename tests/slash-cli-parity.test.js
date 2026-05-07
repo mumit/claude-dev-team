@@ -33,6 +33,7 @@ const CLI_ONLY = new Set([
   "security",       // runs security-heuristic.js
   "runbook",        // runs runbook-check.js
   "budget",         // runs budget.js (init/update/check)
+  "visualize",      // runs visualize.js — writes pipeline/diagram.md (Mermaid)
 
   // Internal scaffolding consumed by /pipeline et al.; not user-facing.
   "pipeline:new",

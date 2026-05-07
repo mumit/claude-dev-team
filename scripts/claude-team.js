@@ -1248,7 +1248,7 @@ function usage(exitCode = 1) {
     "",
     "Core:",
     "  status | next | roadmap | validate | doctor | reset",
-    "  review | security | runbook | budget | lessons | summary | autofold",
+    "  review | security | runbook | budget | visualize | lessons | summary | autofold",
     "  audit | audit-quick | health-check",
     "",
     "Pipeline:",
@@ -1305,6 +1305,7 @@ const COMMANDS = {
   security: (argv) => runNodeScript("security-heuristic.js", argv),
   runbook: () => runNodeScript("runbook-check.js"),
   budget: (argv) => runNodeScript("budget.js", argv),
+  visualize: (argv) => runNodeScript("visualize.js", argv),
   lessons: (argv) => runNodeScript("lessons.js", argv),
 
   // Audit family

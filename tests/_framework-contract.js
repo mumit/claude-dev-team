@@ -89,6 +89,7 @@ const HELPER_SCRIPTS = [
   "security-heuristic.js",
   "stoplist.js",
   "budget.js",
+  "visualize.js",
   "consistency.js",
   "lint-syntax.js",
   "audit.js",
