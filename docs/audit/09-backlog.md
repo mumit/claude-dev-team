@@ -64,7 +64,7 @@ None. The audit found no critical issues.
 | ID | Title | Theme | Effort | Risk of NOT changing | Confidence |
 |---|---|---|---|---|---|
 | **B-1 [DONE]** | Add `tests/hook-parity.test.js` to pin the two hook copies byte-equal | Theme 1 | XS | Medium — silent drift would break the harness or the CLI | HIGH |
-| **B-2** | Tighten `Bash(curl *)` allow in `settings.json` to a hostname allow-list | Theme 3 | XS | Medium — broad allow lets compromised agent exfiltrate | HIGH |
+| **B-2 [DONE]** | Tighten `Bash(curl *)` allow in `settings.json` to a hostname allow-list | Theme 3 | XS | Medium — broad allow lets compromised agent exfiltrate | HIGH |
 | **B-3 [DONE]** | Distinguish error classes in `gate-validator.js` so `EACCES` exits 1 (FAIL) instead of 0 (PASS) | Theme 3 | XS | Medium — silent PASS on permission error could hide real failures | HIGH |
 | **B-4** | Add `description` fields to `schemas/*.schema.json` (one line each) | Theme 4 | XS | Low — improves contributor UX | HIGH |
 | **B-5** | Write `templates/README.md` listing the 11 templates with one-line purpose each | Theme 4 | XS | Low — improves contributor UX | HIGH |
