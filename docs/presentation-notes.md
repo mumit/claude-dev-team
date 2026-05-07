@@ -1,10 +1,10 @@
 # Presentation Speaker Notes
 
-Companion to `docs/build-presentation.js`. One section per slide, in slide order.
+Companion to `scripts/build-presentation.js`. One section per slide, in slide order.
 These are talking points — not a script. Adjust the depth based on your audience's
 technical level and how much time you have per section.
 
-Generate the deck: `npm install pptxgenjs react-icons react react-dom sharp && node docs/build-presentation.js`
+Generate the deck: `npm install pptxgenjs react-icons react react-dom sharp && node scripts/build-presentation.js`
 
 ---
 

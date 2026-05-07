@@ -83,9 +83,9 @@ could be better.
   is file-presence + config-key. Promote to "given the same gate
   inputs, both repos' validators emit the same outputs" — would catch
   semantic drift.
-- **B-26** Move `docs/build-presentation.js` into `scripts/`. Pure
-  cleanliness; doesn't fix a bug. Park unless contributors keep getting
-  confused by its location.
+- **B-26 [DONE]** Moved `docs/build-presentation.js` to `scripts/build-presentation.js`.
+  Pure cleanliness — `docs/` now only holds prose; build-time scripts all
+  live under `scripts/`.
 - **B-27 [DONE]** ADR for the bilateral coupling between `pipeline.md` and
   agent prompts (`docs/adr/0001-pipeline-agent-bilateral-coupling.md`).
 

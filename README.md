@@ -533,7 +533,7 @@ The `docs/` directory includes materials for presenting and sharing the framewor
 - **[docs/concepts.md](docs/concepts.md)** — One-page primer: what an agent, command, skill, rule, and hook each are (and how they compose)
 - **[docs/presentation-notes.md](docs/presentation-notes.md)** — Speaker notes for each of the 19 deck slides: talking points, transitions, and a timing reference
 - **[docs/faq.md](docs/faq.md)** — Frequently asked questions from technical teams evaluating the framework
-- **[docs/build-presentation.js](docs/build-presentation.js)** — Node script to generate a 19-slide `.pptx` deck (`npm install pptxgenjs react-icons react react-dom sharp && node docs/build-presentation.js`)
+- **[scripts/build-presentation.js](scripts/build-presentation.js)** — Node script to generate a 19-slide `.pptx` deck (`npm install pptxgenjs react-icons react react-dom sharp && node scripts/build-presentation.js`)
 
 ---
 

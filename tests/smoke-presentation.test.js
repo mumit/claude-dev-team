@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const SCRIPT = path.resolve(__dirname, '..', 'docs', 'build-presentation.js');
+const SCRIPT = path.resolve(__dirname, '..', 'scripts', 'build-presentation.js');
 const MODULES_PRESENT = fs.existsSync(
   path.resolve(__dirname, '..', 'node_modules', 'pptxgenjs')
 );
