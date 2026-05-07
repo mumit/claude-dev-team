@@ -28,6 +28,7 @@
     "review:derive": "node scripts/approval-derivation.js",
     "security:check": "node scripts/security-heuristic.js",
     "runbook:check": "node scripts/runbook-check.js",
+    "budget": "node scripts/claude-team.js budget",
     "autofold": "node scripts/claude-team.js autofold",
     "pipeline": "node scripts/claude-team.js pipeline",
     "quick": "node scripts/claude-team.js quick",

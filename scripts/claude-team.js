@@ -1248,7 +1248,7 @@ function usage(exitCode = 1) {
     "",
     "Core:",
     "  status | next | roadmap | validate | doctor | reset",
-    "  review | security | runbook | lessons | summary | autofold",
+    "  review | security | runbook | budget | lessons | summary | autofold",
     "  audit | audit-quick | health-check",
     "",
     "Pipeline:",
@@ -1290,6 +1290,7 @@ function main() {
   if (command === "review") return runNodeScript("approval-derivation.js");
   if (command === "security") return runNodeScript("security-heuristic.js", process.argv.slice(3));
   if (command === "runbook") return runNodeScript("runbook-check.js");
+  if (command === "budget") return runNodeScript("budget.js", process.argv.slice(3));
   if (command === "audit") return runNodeScript("audit.js", ["full", ...process.argv.slice(3)]);
   if (command === "audit-quick") return runNodeScript("audit.js", ["quick", ...process.argv.slice(3)]);
   if (command === "health-check") return runNodeScript("audit.js", ["health-check", ...process.argv.slice(3)]);

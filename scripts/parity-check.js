@@ -108,6 +108,7 @@ const REQUIRED_SCRIPTS = [
   "runbook-check.js",
   "security-heuristic.js",
   "stoplist.js",
+  "budget.js",
   "consistency.js",
   "lint-syntax.js",
   "audit.js",

@@ -78,7 +78,7 @@ None. The audit found no critical issues.
 
 | ID | Title | Theme | Effort | Risk of NOT changing | Confidence |
 |---|---|---|---|---|---|
-| **B-11** | Port `scripts/budget.js` from codex-dev-team and wire `claude-team.js budget {init,update,check}` | Theme 2 | S | Medium — documented escalation never fires; runaway pipeline silent | HIGH |
+| **B-11 [DONE]** | Port `scripts/budget.js` from codex-dev-team and wire `claude-team.js budget {init,update,check}` | Theme 2 | S | Medium — documented escalation never fires; runaway pipeline silent | HIGH |
 | **B-12** | Add `scripts/visualize.js` (Mermaid state diagram from gate state) — port from codex | Theme 2 | S | Low — quality-of-life | MEDIUM |
 | **B-13 [DONE]** | Pre-flight regex check in `claude-team.js` for stoplist matches; reject `/quick`, `/nano` etc. when matched | Theme 3 | S | Medium — prevents accidental skip of full pipeline on auth/PII changes | HIGH |
 | **B-14** | Concurrency test for `approval-derivation.js`: spawn two concurrent review writes, assert both approvals land | Theme 5 | S | Medium — closing T-01; the file-lock model deserves a real concurrency test | HIGH |
