@@ -267,6 +267,31 @@ describe("gate-validator.js", () => {
     assert.match(result.stderr, /filesystem error \(ENOTDIR\)/);
   });
 
+  it("exits 1 when a gate file exceeds the 1 MB size cap", () => {
+    gatesDir = path.join(tmpDir, "pipeline", "gates");
+    fs.mkdirSync(gatesDir, { recursive: true });
+    // Build a > 1 MB JSON object: a single warnings entry padded with text.
+    // The result is still valid JSON, so the parse never runs — the size
+    // check should reject before that.
+    const oversize = {
+      stage: "stage-01",
+      status: "PASS",
+      agent: "pm",
+      track: "full",
+      timestamp: "2026-04-09T12:00:00Z",
+      blockers: [],
+      warnings: ["x".repeat(1_100_000)],
+    };
+    fs.writeFileSync(
+      path.join(gatesDir, "stage-01.json"),
+      JSON.stringify(oversize),
+    );
+
+    const result = run(tmpDir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /exceeds 1000000 bytes/);
+  });
+
   it("exits 1 when pipeline/gates is unreadable (EACCES)", (t) => {
     const isRoot =
       typeof process.getuid === "function" && process.getuid() === 0;

@@ -427,6 +427,64 @@ describe("approval-derivation.js", () => {
     assert.deepEqual(gate.approvals, ["dev-frontend"]);
   });
 
+  // ── Size caps (audit B-16) ──────────────────────────────────────────
+
+  it("skips an oversized review file with a WARN", () => {
+    const filePath = path.join(reviewDir, "by-frontend.md");
+    fs.mkdirSync(reviewDir, { recursive: true });
+    // Build a > 1 MB review file containing a real APPROVED marker; the
+    // size check must reject before parseReviewFile sees the marker.
+    fs.writeFileSync(
+      filePath,
+      "## Review of backend\nREVIEW: APPROVED\n" + "x".repeat(1_100_000),
+    );
+
+    const result = run(tmpDir, hookContext(filePath));
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /exceeds 1000000 bytes/);
+    // Because the review wasn't parsed, no gate should have been written.
+    assert.equal(
+      fs.existsSync(path.join(gatesDir, "stage-05-backend.json")),
+      false,
+      "oversized review file must not result in a gate write",
+    );
+  });
+
+  it("refuses to clobber an oversized existing gate file", () => {
+    fs.mkdirSync(gatesDir, { recursive: true });
+    const gatePath = path.join(gatesDir, "stage-05-backend.json");
+    // A valid JSON gate, but oversized — the hook must not parse and
+    // overwrite it.
+    const oversize = {
+      stage: "stage-05-backend",
+      status: "FAIL",
+      agent: "orchestrator",
+      track: "full",
+      timestamp: "2026-04-29T12:00:00Z",
+      area: "backend",
+      review_shape: "matrix",
+      required_approvals: 2,
+      approvals: [],
+      changes_requested: [],
+      escalated_to_principal: false,
+      blockers: [],
+      warnings: ["x".repeat(1_100_000)],
+    };
+    fs.writeFileSync(gatePath, JSON.stringify(oversize));
+    const beforeBytes = fs.statSync(gatePath).size;
+
+    write(
+      path.join(reviewDir, "by-frontend.md"),
+      ["## Review of backend", "REVIEW: APPROVED", ""].join("\n"),
+    );
+
+    const result = run(tmpDir, hookContext(path.join(reviewDir, "by-frontend.md")));
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /refusing to clobber/);
+    // Gate left untouched.
+    assert.equal(fs.statSync(gatePath).size, beforeBytes);
+  });
+
   // ── Concurrency: two reviewers writing the same gate at once ────────
 
   it("two concurrent reviewer hooks both land in the same gate without corruption", async () => {

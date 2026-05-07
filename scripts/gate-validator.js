@@ -57,9 +57,22 @@ const REQUIRED_FIELDS = [
   "warnings",
 ];
 
+// 1 MB cap on gate file size. Gates are typically <1 KB; an attacker (or
+// runaway producer) writing a gigabyte-sized "blockers" string would
+// otherwise OOM the validator. The bound is loose enough that no
+// legitimate gate will hit it.
+const MAX_GATE_BYTES = 1_000_000;
+
 /** Read a gate file and parse as JSON. Returns { gate, error }. */
 function loadGate(fullPath) {
   try {
+    const stat = fs.statSync(fullPath);
+    if (stat.size > MAX_GATE_BYTES) {
+      return {
+        gate: null,
+        error: `gate file exceeds ${MAX_GATE_BYTES} bytes (size: ${stat.size})`,
+      };
+    }
     const raw = fs.readFileSync(fullPath, "utf8");
     return { gate: JSON.parse(raw), error: null };
   } catch (e) {

@@ -82,6 +82,11 @@ const LOCK_RETRIES = 20;
 const LOCK_DELAY_MS = 30;
 const LOCK_STALE_MS = 5000; // clear locks held for > 5 s (crashed process)
 
+// 1 MB cap on review-file and gate-file reads. Both are typically <10 KB;
+// an oversized file (corruption, a prank, or an attacker with write access
+// to pipeline/) would otherwise OOM the hook on every save.
+const MAX_FILE_BYTES = 1_000_000;
+
 // Map reviewer file suffix to reviewer agent name.
 // e.g. by-backend.md -> dev-backend, by-security.md -> security-engineer.
 const REVIEWER_MAP = {
@@ -203,6 +208,13 @@ function releaseLock(lockPath) {
 function parseReviewFile(filePath) {
   let content;
   try {
+    const stat = fs.statSync(filePath);
+    if (stat.size > MAX_FILE_BYTES) {
+      console.log(
+        `[approval-derivation] ⚠️  ${filePath} exceeds ${MAX_FILE_BYTES} bytes (size: ${stat.size}); skipping`,
+      );
+      return [];
+    }
     content = fs.readFileSync(filePath, "utf8");
   } catch {
     return [];
@@ -266,6 +278,13 @@ function applyVerdict({ area, verdict, reviewer }) {
 
     if (fs.existsSync(gatePath)) {
       try {
+        const stat = fs.statSync(gatePath);
+        if (stat.size > MAX_FILE_BYTES) {
+          console.log(
+            `[approval-derivation] ⚠️  ${gatePath} exceeds ${MAX_FILE_BYTES} bytes (size: ${stat.size}); refusing to clobber`,
+          );
+          return;
+        }
         gate = JSON.parse(fs.readFileSync(gatePath, "utf8"));
       } catch {
         // Malformed existing gate — do not clobber; surface a WARN and exit.
