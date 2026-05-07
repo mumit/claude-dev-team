@@ -80,6 +80,7 @@ const HELPER_SCRIPTS = [
   "lessons.js",
   "runbook-check.js",
   "security-heuristic.js",
+  "stoplist.js",
   "consistency.js",
   "lint-syntax.js",
   "audit.js",

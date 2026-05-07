@@ -2,10 +2,16 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
+const { checkStoplist, explainMatches } = require("./stoplist");
 
 const ROOT = process.cwd();
 const TEMPLATE_DIR = path.join(ROOT, "templates");
 const TRACKS = ["full", "quick", "nano", "config-only", "dep-update", "hotfix"];
+
+// Tracks that bypass the safety stoplist:
+//   - hotfix: by design (urgent prod bugs follow their own rules)
+//   - full pipeline: doesn't go through runTrack
+const STOPLIST_GUARDED_TRACKS = new Set(["quick", "nano", "config-only", "dep-update"]);
 
 // Claude stage numbering:
 //   1 = requirements, 2 = design, 3 = clarify, 4 = build,
@@ -946,11 +952,19 @@ function recordTrackStart(track, description) {
   );
 }
 
-function runTrack(track, description) {
+function runTrack(track, description, options = {}) {
   const normalizedDescription = description.trim();
   if (!normalizedDescription) {
     console.error(`Usage: claude-team ${track} <change description>`);
     return 1;
+  }
+
+  if (STOPLIST_GUARDED_TRACKS.has(track) && !options.force) {
+    const matches = checkStoplist({ description: normalizedDescription, cwd: ROOT });
+    if (matches.length > 0) {
+      console.error(explainMatches(matches));
+      return 2;
+    }
   }
 
   return withTrack(track, () => {
@@ -1280,11 +1294,12 @@ function main() {
   if (command === "audit-quick") return runNodeScript("audit.js", ["quick", ...process.argv.slice(3)]);
   if (command === "health-check") return runNodeScript("audit.js", ["health-check", ...process.argv.slice(3)]);
   if (command === "pipeline") return runPipeline(process.argv.slice(3).join(" "));
-  if (command === "quick") return runTrack("quick", process.argv.slice(3).join(" "));
-  if (command === "nano") return runTrack("nano", process.argv.slice(3).join(" "));
-  if (command === "config-only") return runTrack("config-only", process.argv.slice(3).join(" "));
-  if (command === "dep-update") return runTrack("dep-update", process.argv.slice(3).join(" "));
-  if (command === "hotfix") return runTrack("hotfix", process.argv.slice(3).join(" "));
+  if (command === "quick" || command === "nano" || command === "config-only" || command === "dep-update" || command === "hotfix") {
+    const args = process.argv.slice(3);
+    const force = args.includes("--force");
+    const description = args.filter((a) => a !== "--force").join(" ");
+    return runTrack(command, description, { force });
+  }
   if (command === "pipeline:scaffold") return scaffoldPipeline(process.argv.slice(3).join(" "));
   if (command === "pipeline:new") return newPipeline(process.argv.slice(3).join(" "));
   if (command === "pipeline-brief") {
