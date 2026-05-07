@@ -81,7 +81,7 @@ None. The audit found no critical issues.
 | **B-11 [DONE]** | Port `scripts/budget.js` from codex-dev-team and wire `claude-team.js budget {init,update,check}` | Theme 2 | S | Medium — documented escalation never fires; runaway pipeline silent | HIGH |
 | **B-12** | Add `scripts/visualize.js` (Mermaid state diagram from gate state) — port from codex | Theme 2 | S | Low — quality-of-life | MEDIUM |
 | **B-13 [DONE]** | Pre-flight regex check in `claude-team.js` for stoplist matches; reject `/quick`, `/nano` etc. when matched | Theme 3 | S | Medium — prevents accidental skip of full pipeline on auth/PII changes | HIGH |
-| **B-14** | Concurrency test for `approval-derivation.js`: spawn two concurrent review writes, assert both approvals land | Theme 5 | S | Medium — closing T-01; the file-lock model deserves a real concurrency test | HIGH |
+| **B-14 [DONE]** | Concurrency test for `approval-derivation.js`: spawn two concurrent review writes, assert both approvals land | Theme 5 | S | Medium — closing T-01; the file-lock model deserves a real concurrency test | HIGH |
 | **B-15** | Table-driven test for `security-heuristic.js` with 15–20 sample paths from `pipeline.md` Stage 4.5b list | Theme 5 | XS | Low — closes T-02 | HIGH |
 | **B-16** | Cap `JSON.parse` input on gate files to 1 MB to bound memory | Theme 3 | XS | Low — defence in depth | MEDIUM |
 | **B-17** | Replace `claude-team.js` if-chain dispatch with object-map dispatch | Theme 1 | S | Low — maintainability and drift safety | HIGH |

@@ -1,6 +1,6 @@
 const { describe, it, beforeEach, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
-const { execFileSync } = require("node:child_process");
+const { execFileSync, spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
@@ -425,5 +425,89 @@ describe("approval-derivation.js", () => {
     const gate = readGate(gatesDir, "stage-05-backend.json");
     assert.ok(gate, "full scan fallback must still derive approvals");
     assert.deepEqual(gate.approvals, ["dev-frontend"]);
+  });
+
+  // ── Concurrency: two reviewers writing the same gate at once ────────
+
+  it("two concurrent reviewer hooks both land in the same gate without corruption", async () => {
+    // Pre-create both review files on disk so neither hook is racing the
+    // file write itself; what we're stress-testing is the gate update.
+    const frontendFile = path.join(reviewDir, "by-frontend.md");
+    const platformFile = path.join(reviewDir, "by-platform.md");
+    write(
+      frontendFile,
+      ["## Review of backend", "Looks good.", "", "REVIEW: APPROVED", ""].join("\n"),
+    );
+    write(
+      platformFile,
+      ["## Review of backend", "Smoke check passes.", "", "REVIEW: APPROVED", ""].join("\n"),
+    );
+
+    // Pre-create a matrix-shape gate (required_approvals: 2). The hook
+    // increments approvals; we want to see both names land.
+    fs.mkdirSync(gatesDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(gatesDir, "stage-05-backend.json"),
+      JSON.stringify({
+        stage: "stage-05-backend",
+        status: "FAIL",
+        agent: "orchestrator",
+        track: "full",
+        timestamp: "2026-04-29T12:00:00Z",
+        area: "backend",
+        review_shape: "matrix",
+        required_approvals: 2,
+        approvals: [],
+        changes_requested: [],
+        escalated_to_principal: false,
+        blockers: [],
+        warnings: [],
+      }, null, 2),
+    );
+
+    function spawnHook(stdinPayload) {
+      return new Promise((resolve) => {
+        const child = spawn("node", [HOOK], {
+          cwd: tmpDir,
+          stdio: ["pipe", "pipe", "pipe"],
+        });
+        let stdout = "";
+        let stderr = "";
+        child.stdout.on("data", (chunk) => { stdout += chunk; });
+        child.stderr.on("data", (chunk) => { stderr += chunk; });
+        child.on("close", (code) => resolve({ status: code, stdout, stderr }));
+        child.stdin.write(stdinPayload);
+        child.stdin.end();
+      });
+    }
+
+    const [first, second] = await Promise.all([
+      spawnHook(hookContext(frontendFile)),
+      spawnHook(hookContext(platformFile)),
+    ]);
+
+    assert.equal(first.status, 0, `first hook should exit clean: ${first.stderr}`);
+    assert.equal(second.status, 0, `second hook should exit clean: ${second.stderr}`);
+
+    // Gate JSON must be valid (no partial-write corruption).
+    const gate = readGate(gatesDir, "stage-05-backend.json");
+    assert.ok(gate, "gate file should still exist");
+
+    // Both reviewers must appear in approvals — neither write should have
+    // clobbered the other thanks to the lock + atomic temp-file rename.
+    assert.equal(gate.approvals.length, 2, `expected 2 approvals, got ${JSON.stringify(gate.approvals)}`);
+    assert.ok(gate.approvals.includes("dev-frontend"));
+    assert.ok(gate.approvals.includes("dev-platform"));
+    assert.equal(gate.changes_requested.length, 0);
+    assert.equal(gate.status, "PASS", "gate should reach PASS once both approvals land");
+
+    // Lock file must be cleaned up (whichever process held it last
+    // released it in its finally block).
+    const lockFile = path.join(gatesDir, "stage-05-backend.json.lock");
+    assert.equal(
+      fs.existsSync(lockFile),
+      false,
+      "lock file must be removed after the second hook exits",
+    );
   });
 });
